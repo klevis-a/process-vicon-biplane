@@ -77,3 +77,12 @@ class DynamicTrial:
         if self._vicon_data is None:
             self._vicon_data = pd.read_csv(self.vicon_csv_file, header=[0, 1])
         return self._vicon_data
+
+    def marker_data_df(self, marker_name):
+        return self.vicon_data[marker_name]
+
+    def marker_data(self, marker_name, replace_nan=False):
+        if replace_nan:
+            return self.marker_data_df(marker_name).replace({np.nan: None}).values
+        else:
+            return self.marker_data_df(marker_name).values
