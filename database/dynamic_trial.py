@@ -81,8 +81,15 @@ class DynamicTrial:
     def marker_data_df(self, marker_name):
         return self.vicon_data[marker_name]
 
-    def marker_data(self, marker_name, replace_nan=False):
-        if replace_nan:
-            return self.marker_data_df(marker_name).replace({np.nan: None}).values
-        else:
-            return self.marker_data_df(marker_name).values
+    def marker_data(self, marker_name):
+        return self.marker_data_df(marker_name).values
+
+    @property
+    def vicon_endpts(self):
+        if self._vicon_endpts is None:
+            endpts_df = pd.read_csv(self.endpts_file, header=0)
+            # the exported values assume that the first vicon frame is 1 but Python uses 0 based indexing
+            self._vicon_endpts = np.squeeze(endpts_df.values) - 1
+            # the exported values are inclusive but most Python and numpy functions (arange) are exclusive of the stop
+            self._vicon_endpts[1] += 1
+        return self._vicon_endpts

@@ -11,6 +11,7 @@ def create_db(db_dir):
     db = pd.concat(subject_dfs, ignore_index=True)
     db[['Subject', 'Trial_Name', 'Subject_Short']] = db[['Subject', 'Trial_Name', 'Subject_Short']].astype('string')
     db.set_index('Trial_Name', drop=True, inplace=True, verify_integrity=True)
+    db.attrs['dt'] = 1/100
 
     anthro_file = db_path / 'Subject_Anthropometrics.csv'
     subject_anthro_dtype = {'Subject': 'string', 'Dominant_Arm': 'string', 'Gender': 'string', 'Age': np.int32,
@@ -26,3 +27,4 @@ def pre_initialize(db):
         trial.humerus_biplane_data
         trial.scapula_biplane_data
         trial.vicon_data
+        trial.vicon_endpts

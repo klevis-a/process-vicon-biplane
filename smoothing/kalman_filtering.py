@@ -1,15 +1,18 @@
+from collections import namedtuple
+
 import numpy as np
 from filterpy.common.discretization import Q_discrete_white_noise
 from filterpy.kalman import KalmanFilter
 
 
 class LinearKalmanFilter1D:
-    def __init__(self, dt, discrete_white_noise_var, r, p, db):
+    FilterOutput = namedtuple('FilterOutput', ['pos', 'vel', 'acc'])
+
+    def __init__(self, dt, discrete_white_noise_var, r, p):
         self.dt = dt
         self.discrete_white_noise_var = discrete_white_noise_var
         self.r = r
         self.p = p
-        self.db = db
 
     @classmethod
     def create_linear_kalman_filter_1d(cls, dt, discrete_white_noise_var, r, x, p):
@@ -26,17 +29,17 @@ class LinearKalmanFilter1D:
         tracker.H = np.array([[1.0, 0.0, 0.0]])
         return tracker
 
-    def filter_trial_marker(self, marker_data):
-        kfs = []
+    def filter_trial_marker(self, marker_data_orig):
+        marker_data = np.where(np.isnan(marker_data_orig), None, marker_data_orig)
         mus = []
         covs = []
         mus_smooth = []
         covs_smooth = []
 
+        # here we iterate over each dimension x, y, z
         for n in range(3):
             kf = LinearKalmanFilter1D.create_linear_kalman_filter_1d(self.dt, self.discrete_white_noise_var, self.r,
                                                                      np.array([marker_data[1, n], 0.0, 0.0]), self.p)
-            kfs.append(kf)
             mu, cov, _, _ = kf.batch_filter(marker_data[:, n])
             mus.append(mu)
             covs.append(cov)
@@ -44,7 +47,14 @@ class LinearKalmanFilter1D:
             mus_smooth.append(mu_smooth)
             covs_smooth.append(cov_smooth)
 
-        marker_data_filtered = np.vstack([mu[:, 0, 0] for mu in mus]).T
-        marker_data_smoothed = np.vstack([mu_smooth[:, 0, 0] for mu_smooth in mus_smooth]).T
+        # here we iterate over each derivative (0, 1, 2)
+        filtered_outputs = []
+        smoothed_outputs = []
+        for i in range(3):
+            marker_data_filtered = np.vstack([mu[:, i, 0] for mu in mus]).T
+            marker_data_smoothed = np.vstack([mu_smooth[:, i, 0] for mu_smooth in mus_smooth]).T
+            filtered_outputs.append(marker_data_filtered)
+            smoothed_outputs.append(marker_data_smoothed)
 
-        return marker_data, marker_data_filtered, marker_data_smoothed
+        return (LinearKalmanFilter1D.FilterOutput._make(filtered_outputs),
+                LinearKalmanFilter1D.FilterOutput._make(smoothed_outputs))
