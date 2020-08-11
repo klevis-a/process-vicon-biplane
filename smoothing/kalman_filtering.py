@@ -57,4 +57,4 @@ class LinearKalmanFilter1D:
             smoothed_outputs.append(marker_data_smoothed)
 
         return (LinearKalmanFilter1D.FilterOutput._make(filtered_outputs),
-                LinearKalmanFilter1D.FilterOutput._make(smoothed_outputs))
+                LinearKalmanFilter1D.FilterOutput._make(smoothed_outputs), covs, covs_smooth)
