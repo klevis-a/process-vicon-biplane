@@ -1,3 +1,4 @@
+from collections import namedtuple
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -166,6 +167,8 @@ def plot_sd(trial_name, marker_name, y_labels, variances_filtered, variances_smo
 
 
 class MarkerPlotter:
+    CovarianceVec = namedtuple('CovarianceVec', ['pos', 'vel', 'acc', 'pos_vel', 'pos_acc', 'vel_acc'])
+
     def __init__(self, db, trial_name, marker_name, do_filter=True, do_plot=True):
         self.db = db
         self.trial_name = trial_name
@@ -181,8 +184,8 @@ class MarkerPlotter:
         self.smoothed_md = None
         self.covs = None
         self.covs_smooth = None
-        self.variances = None
-        self.variances_smooth = None
+        self.covariances = None
+        self.covariances_smooth = None
 
         if do_filter:
             self.filter()
@@ -191,19 +194,20 @@ class MarkerPlotter:
             self.plot()
 
     @classmethod
-    def extract_variances(cls, covs):
-        # here we iterate over each dimension (x, y, z)
-        variances = []
-        for i in range(3):
-            variance = np.vstack([cov[:, i, i] for cov in covs]).T
-            variances.append(variance)
-        return variances
+    def extract_covariances(cls, covs):
+        cov_indices = [(0, 0), (1, 1), (2, 2), (0, 1), (0, 2), (1, 2)]
+        # here we iterate over each variance/covariance pos(0), vel(1), acc(2), pos_vel(3), pos_acc(4), vel_acc(5)
+        covariances = []
+        for cov_idx in cov_indices:
+            covariance = np.vstack([cov[:, cov_idx[0], cov_idx[1]] for cov in covs]).T
+            covariances.append(covariance)
+        return covariances
 
     def filter(self):
         kf = LinearKalmanFilter1D(dt=self.dt, discrete_white_noise_var=10000, r=1, p=np.diag([0.5, 0.5, 0.5]))
         self.filtered_md, self.smoothed_md, self.covs, self.covs_smooth = kf.filter_trial_marker(self.raw_md.pos)
-        self.variances = LinearKalmanFilter1D.FilterOutput(*MarkerPlotter.extract_variances(self.covs))
-        self.variances_smooth = LinearKalmanFilter1D.FilterOutput(*MarkerPlotter.extract_variances(self.covs_smooth))
+        self.covariances = MarkerPlotter.CovarianceVec(*MarkerPlotter.extract_covariances(self.covs))
+        self.covariances_smooth = MarkerPlotter.CovarianceVec(*MarkerPlotter.extract_covariances(self.covs_smooth))
 
     def plot(self, all_frames=True, biplane_frames=True, plot_diff=True):
         y_labels = ['Position (mm)', 'Velocity (mm/s)', 'Acceleration (mm/s$^2$)']
@@ -220,7 +224,7 @@ class MarkerPlotter:
         if all_frames:
             for (fig_num, (y_label, attr)) in enumerate(zip(y_labels, attrs)):
                 plot_marker_data(self.trial_name, self.marker_name, y_label, self.raw_md, self.filtered_md,
-                                 self.smoothed_md, self.variances, self.variances_smooth, attr,
+                                 self.smoothed_md, self.covariances, self.covariances_smooth, attr,
                                  current_fig_num + fig_num, None)
             if plot_diff:
                 plot_marker_data_diff(self.trial_name, self.marker_name, 'Filtering Effect (mm)', filtered_diff,
@@ -232,7 +236,7 @@ class MarkerPlotter:
         if biplane_frames:
             for (fig_num, (y_label, attr)) in enumerate(zip(y_labels, attrs)):
                 plot_marker_data(self.trial_name, self.marker_name, y_label, self.raw_md, self.filtered_md,
-                                 self.smoothed_md, self.variances, self.variances_smooth, attr,
+                                 self.smoothed_md, self.covariances, self.covariances_smooth, attr,
                                  current_fig_num + fig_num, self.trial.vicon_endpts)
             if plot_diff:
                 plot_marker_data_diff(self.trial_name, self.marker_name, 'Filtering Effect (mm)', filtered_diff,
@@ -243,5 +247,5 @@ class MarkerPlotter:
         current_fig_num = (current_fig_num + num_figs +
                            (2 if plot_diff is True else 0)) if biplane_frames is True else 0
         y_labels = ['Pos (mm)', 'Vel (mm/s)', 'Acc (mm/s$^2$)']
-        plot_sd(self.trial_name, self.marker_name, y_labels, self.variances, self.variances_smooth, current_fig_num,
+        plot_sd(self.trial_name, self.marker_name, y_labels, self.covariances, self.covariances_smooth, current_fig_num,
                 self.trial.vicon_endpts)
