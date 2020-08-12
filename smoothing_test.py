@@ -8,5 +8,5 @@ from parameters import Params
 params = Params.get_params(sys.argv[1])
 db, anthro = create_db(params.db_dir)
 graph.init_graphing()
-marker_plotter = graph.MarkerPlotter(db, params.trial_name, params.marker_name)
+marker_plotter = graph.MarkerPlotter(db, params.trial_name, params.marker_name, params.filter_class)
 plt.show()

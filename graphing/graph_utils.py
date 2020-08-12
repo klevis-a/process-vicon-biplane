@@ -6,7 +6,8 @@ import mplcursors
 import numpy as np
 from matplotlib import rcParams
 from pythonGraphingLibrary import plotUtils
-from smoothing.kalman_filtering import LinearKalmanFilter1D
+import smoothing.kalman_filtering as kalman_filtering
+from smoothing.kalman_filtering import FilterOutput
 
 
 def init_graphing():
@@ -90,19 +91,17 @@ def marker_diff_his(filtered_diff, smoothed_diff, title, x_label, fig_num, color
     return fig, ax, polygons_filtered, polygons_smoothed
 
 
-def sd_trend_graph(var_filtered, var_smoothed, title, y_labels, fig_num, endpts, styles=('r-', 'g-')):
+def cov_trend_graph_init(variance_data, x_data, title, y_labels, fig_num, endpts, process_func, style):
     fig = plt.figure(num=fig_num)
     ax = fig.subplots(3, 3, sharex='all', sharey='row')
     lines = []
-    x_data = np.arange(var_filtered[0].shape[0])
     # iterate over pos, vel, acc
     for i in range(3):
         # iterate over dimension
         dim_lines = []
         for j in range(3):
-            filtered_line, = ax[i, j].plot(x_data + 1, np.sqrt(var_filtered[i][:, j]), styles[0])
-            smoothed_line, = ax[i, j].plot(x_data + 1, np.sqrt(var_smoothed[i][:, j]), styles[1])
-            dim_lines.append((filtered_line, smoothed_line))
+            line, = ax[i, j].plot(x_data + 1, process_func(variance_data[i][:, j]), style)
+            dim_lines.append(line)
             ax[i, j].axvline(endpts[0] + 1)
             ax[i, j].axvline(endpts[1] + 1)
             plotUtils.update_spines(ax[i, j])
@@ -122,6 +121,19 @@ def sd_trend_graph(var_filtered, var_smoothed, title, y_labels, fig_num, endpts,
     fig.suptitle(title, fontsize=11, fontweight='bold')
     plt.subplots_adjust(top=0.94)
     return fig, ax, lines
+
+
+def cov_trend_graph_add(ax, variance_data, x_data, process_func, style):
+    lines = []
+    # iterate over pos, vel, acc
+    for i in range(3):
+        # iterate over dimension
+        dim_lines = []
+        for j in range(3):
+            line, = ax[i, j].plot(x_data + 1, process_func(variance_data[i][:, j]), style)
+            dim_lines.append(line)
+        lines.append(dim_lines)
+    return lines
 
 
 def plot_marker_data(trial_name, marker_name, y_label, md_raw, md_filtered, md_smoothed, var, var_smoothed, kine_var,
@@ -161,37 +173,48 @@ def plot_marker_data_diff_hist(trial_name, marker_name, x_label, filtered_diff, 
     make_interactive()
 
 
-def plot_sd(trial_name, marker_name, y_labels, variances_filtered, variances_smooth, fig_num, endpts):
-    sd_trend_graph(variances_filtered, variances_smooth, trial_name + ' ' + marker_name + ' SD', y_labels, fig_num,
-                   endpts)
+def plot_cov(trial_name, marker_name, variances_filtered, variances_smooth, y_labels, process_func, fig_num, endpts):
+    x_data = np.arange(variances_filtered[0].shape[0])
+    fig, ax, lines_filtered = cov_trend_graph_init(variances_filtered, x_data, trial_name + ' ' + marker_name, y_labels,
+                                                   fig_num, endpts, process_func, 'r-')
+    lines_smooth = cov_trend_graph_add(ax, variances_smooth, x_data, process_func, 'g-')
+    fig.legend((lines_filtered[0][0], lines_smooth[0][0]), ('Filtered', 'Smoothed'), 'upper right', labelspacing=0.1)
+    make_interactive()
 
 
 class MarkerPlotter:
-    CovarianceVec = namedtuple('CovarianceVec', ['pos', 'vel', 'acc', 'pos_vel', 'pos_acc', 'vel_acc'])
-
-    def __init__(self, db, trial_name, marker_name, do_filter=True, do_plot=True):
+    def __init__(self, db, trial_name, marker_name, filter_class, do_filter=True, do_plot=True):
         self.db = db
         self.trial_name = trial_name
         self.marker_name = marker_name
         self.trial = db.loc[trial_name].Trial
         self.dt = self.db.attrs['dt']
+        self.filter_class = getattr(kalman_filtering, filter_class)
 
         marker_pos = self.trial.marker_data(marker_name)
         marker_vel = np.gradient(marker_pos, self.dt, axis=0)
         marker_acc = np.gradient(marker_vel, self.dt, axis=0)
-        self.raw_md = LinearKalmanFilter1D.FilterOutput(marker_pos, marker_vel, marker_acc)
+        self.raw_md = FilterOutput(marker_pos, marker_vel, marker_acc)
         self.filtered_md = None
         self.smoothed_md = None
         self.covs = None
         self.covs_smooth = None
         self.covariances = None
         self.covariances_smooth = None
+        self.corrs = None
+        self.corrs_smooth = None
 
         if do_filter:
             self.filter()
 
         if do_plot:
             self.plot()
+
+    _CovDiagTerms = ['pos', 'vel', 'acc']
+    _CovOffDiagTerms = ['pos_vel', 'pos_acc', 'vel_acc']
+    _AllTerms = _CovDiagTerms + _CovOffDiagTerms
+    CovarianceVec = namedtuple('CovarianceVec', _AllTerms)
+    CorrVec = namedtuple('CorrVec', _CovOffDiagTerms)
 
     @classmethod
     def extract_covariances(cls, covs):
@@ -203,11 +226,28 @@ class MarkerPlotter:
             covariances.append(covariance)
         return covariances
 
+    @classmethod
+    def extract_corrs(cls, covariances):
+        corr_names = MarkerPlotter._CovOffDiagTerms
+        correlations = []
+        for corr_name in corr_names:
+            corr_name_split = corr_name.split('_')
+            first_term = corr_name_split[0]
+            second_term = corr_name_split[1]
+            cov = getattr(covariances, corr_name)
+            var_first_term = getattr(covariances, first_term)
+            var_second_term = getattr(covariances, second_term)
+            correlation = np.divide(cov, np.multiply(np.sqrt(var_first_term), np.sqrt(var_second_term)))
+            correlations.append(correlation)
+        return correlations
+
     def filter(self):
-        kf = LinearKalmanFilter1D(dt=self.dt, discrete_white_noise_var=10000, r=1, p=np.diag([0.5, 0.5, 0.5]))
+        kf = self.filter_class(dt=self.dt, discrete_white_noise_var=10000, r=1, p=np.diag([0.5, 0.5, 0.5]))
         self.filtered_md, self.smoothed_md, self.covs, self.covs_smooth = kf.filter_trial_marker(self.raw_md.pos)
         self.covariances = MarkerPlotter.CovarianceVec(*MarkerPlotter.extract_covariances(self.covs))
         self.covariances_smooth = MarkerPlotter.CovarianceVec(*MarkerPlotter.extract_covariances(self.covs_smooth))
+        self.corrs = MarkerPlotter.CorrVec(*MarkerPlotter.extract_corrs(self.covariances))
+        self.corrs_smooth = MarkerPlotter.CorrVec(*MarkerPlotter.extract_corrs(self.covariances_smooth))
 
     def plot(self, all_frames=True, biplane_frames=True, plot_diff=True):
         y_labels = ['Position (mm)', 'Velocity (mm/s)', 'Acceleration (mm/s$^2$)']
@@ -246,6 +286,9 @@ class MarkerPlotter:
 
         current_fig_num = (current_fig_num + num_figs +
                            (2 if plot_diff is True else 0)) if biplane_frames is True else 0
-        y_labels = ['Pos (mm)', 'Vel (mm/s)', 'Acc (mm/s$^2$)']
-        plot_sd(self.trial_name, self.marker_name, y_labels, self.covariances, self.covariances_smooth, current_fig_num,
-                self.trial.vicon_endpts)
+        y_labels_var = ['Pos (mm)', 'Vel (mm/s)', 'Acc (mm/s$^2$)']
+        plot_cov(self.trial_name, self.marker_name, self.covariances, self.covariances_smooth, y_labels_var, np.sqrt,
+                 current_fig_num, self.trial.vicon_endpts)
+        y_labels_corr = ['Pos Vel Corr', 'Pos Acc Corr', 'Vel Acc Corr']
+        plot_cov(self.trial_name, self.marker_name, self.corrs, self.corrs_smooth, y_labels_corr, lambda x: x,
+                 current_fig_num + 1, self.trial.vicon_endpts)
