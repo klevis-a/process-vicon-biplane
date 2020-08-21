@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import mplcursors
 import numpy as np
+from collections.abc import Iterable
 from matplotlib import rcParams
+from matplotlib import axes
 from pythonGraphingLibrary import plotUtils
 import smoothing.kalman_filtering as kalman_filtering
 from smoothing.kalman_filtering import FilterOutput
@@ -91,7 +93,7 @@ def marker_diff_his(filtered_diff, smoothed_diff, title, x_label, fig_num, color
     return fig, ax, polygons_filtered, polygons_smoothed
 
 
-def cov_trend_graph_init(variance_data, x_data, title, y_labels, fig_num, endpts, process_func, style):
+def cov_trend_graph_init(variance_data, x_data, title, y_labels, fig_num, process_func, style):
     fig = plt.figure(num=fig_num)
     ax = fig.subplots(3, 3, sharex='all', sharey='row')
     lines = []
@@ -100,10 +102,8 @@ def cov_trend_graph_init(variance_data, x_data, title, y_labels, fig_num, endpts
         # iterate over dimension
         dim_lines = []
         for j in range(3):
-            line, = ax[i, j].plot(x_data + 1, process_func(variance_data[i][:, j]), style)
+            line, = ax[i, j].plot(x_data + 1, process_func(variance_data[i][x_data, j]), style)
             dim_lines.append(line)
-            ax[i, j].axvline(endpts[0] + 1)
-            ax[i, j].axvline(endpts[1] + 1)
             plotUtils.update_spines(ax[i, j])
             plotUtils.update_xticks(ax[i, j], font_size=8)
             plotUtils.update_yticks(ax[i, j], fontsize=8)
@@ -130,45 +130,49 @@ def cov_trend_graph_add(ax, variance_data, x_data, process_func, style):
         # iterate over dimension
         dim_lines = []
         for j in range(3):
-            line, = ax[i, j].plot(x_data + 1, process_func(variance_data[i][:, j]), style)
+            line, = ax[i, j].plot(x_data + 1, process_func(variance_data[i][x_data, j]), style)
             dim_lines.append(line)
         lines.append(dim_lines)
     return lines
 
 
 def plot_marker_data(trial_name, marker_name, y_label, md_raw, md_filtered, md_smoothed, var, var_smoothed, kine_var,
-                     fig_num, endpts):
-    x_data = np.arange(md_raw.pos.shape[0]) if endpts is None else np.arange(endpts[0], endpts[1])
+                     fig_num, endpts, add_sd=True, clip_graph=False):
+    x_data = np.arange(endpts[0], endpts[1]) if clip_graph else np.arange(md_raw.pos.shape[0])
     fig, ax, lines_raw = marker_graph_init(getattr(md_raw, kine_var), trial_name + ' ' + marker_name, y_label,
                                            fig_num=fig_num, x_data=x_data)
     lines_filtered = marker_graph_add(ax, getattr(md_filtered, kine_var), x_data, 'r-')
     lines_smoothed = marker_graph_add(ax, getattr(md_smoothed, kine_var), x_data, 'g-')
-    marker_graph_add_cov(ax, getattr(md_filtered, kine_var), getattr(var, kine_var), x_data, 'red')
-    marker_graph_add_cov(ax, getattr(md_smoothed, kine_var), getattr(var_smoothed, kine_var), x_data, 'green')
+    if add_sd:
+        marker_graph_add_cov(ax, getattr(md_filtered, kine_var), getattr(var, kine_var), x_data, 'red')
+        marker_graph_add_cov(ax, getattr(md_smoothed, kine_var), getattr(var_smoothed, kine_var), x_data, 'green')
+    if not clip_graph:
+        add_vicon_start_stop(ax, endpts[0], endpts[1])
     fig.legend((lines_raw[0], lines_filtered[0], lines_smoothed[0]), ('Raw', 'Filtered', 'Smoothed'), 'upper right',
                labelspacing=0.1)
     make_interactive()
 
 
 def plot_marker_data_diff(trial_name, marker_name, y_label, filtered_diff, smoothed_diff, fig_num, endpts):
-    x_data = np.arange(filtered_diff.shape[0]) if endpts is None else np.arange(endpts[0], endpts[1])
+    x_data = np.arange(filtered_diff.shape[0])
     fig, ax, lines_filtered = marker_graph_init(filtered_diff, trial_name + ' ' + marker_name, y_label, fig_num=fig_num,
                                                 x_data=x_data, style='r-')
     lines_smoothed = marker_graph_add(ax, smoothed_diff, x_data, 'g-')
     fig.legend((lines_filtered[0], lines_smoothed[0]), ('Filtered', 'Smoothed'), 'upper right', labelspacing=0.1)
+    add_vicon_start_stop(ax, endpts[0], endpts[1])
     make_interactive()
 
 
 def plot_marker_data_diff_hist(trial_name, marker_name, x_label, filtered_diff, smoothed_diff, fig_num, endpts):
     if endpts is None:
-        fig, _, lines_filtered, lines_smoothed = marker_diff_his(filtered_diff, smoothed_diff,
-                                                                 trial_name + ' ' + marker_name, x_label, fig_num,
-                                                                 ['red', 'green'])
+        fig, ax, lines_filtered, lines_smoothed = marker_diff_his(filtered_diff, smoothed_diff,
+                                                                  trial_name + ' ' + marker_name, x_label, fig_num,
+                                                                  ['red', 'green'])
     else:
-        fig, _, lines_filtered, lines_smoothed = marker_diff_his(filtered_diff[endpts[0]:endpts[1]],
-                                                                 smoothed_diff[endpts[0]:endpts[1]],
-                                                                 trial_name + ' ' + marker_name, x_label, fig_num,
-                                                                 ['red', 'green'])
+        fig, ax, lines_filtered, lines_smoothed = marker_diff_his(filtered_diff[endpts[0]:endpts[1]],
+                                                                  smoothed_diff[endpts[0]:endpts[1]],
+                                                                  trial_name + ' ' + marker_name, x_label, fig_num,
+                                                                  ['red', 'green'])
     fig.legend((lines_filtered[0], lines_smoothed[0]), ('Filtered', 'Smoothed'), 'upper right', labelspacing=0.1)
     make_interactive()
 
@@ -176,10 +180,23 @@ def plot_marker_data_diff_hist(trial_name, marker_name, x_label, filtered_diff, 
 def plot_cov(trial_name, marker_name, variances_filtered, variances_smooth, y_labels, process_func, fig_num, endpts):
     x_data = np.arange(variances_filtered[0].shape[0])
     fig, ax, lines_filtered = cov_trend_graph_init(variances_filtered, x_data, trial_name + ' ' + marker_name, y_labels,
-                                                   fig_num, endpts, process_func, 'r-')
+                                                   fig_num, process_func, 'r-')
     lines_smooth = cov_trend_graph_add(ax, variances_smooth, x_data, process_func, 'g-')
-    fig.legend((lines_filtered[0][0], lines_smooth[0][0]), ('Filtered', 'Smoothed'), 'upper right', labelspacing=0.1)
+    fig.legend((lines_filtered[0][0], lines_smooth[0][0]), ('Filtered', 'Smoothed'), 'upper right', labelspacing=0.1,
+               ncol=2)
+    add_vicon_start_stop(ax, endpts[0], endpts[1])
     make_interactive()
+
+
+def add_vicon_start_stop(axs, start_i, end_i):
+    if isinstance(axs, Iterable):
+        for ax in axs:
+            add_vicon_start_stop(ax, start_i, end_i)
+    elif isinstance(axs, axes.Axes):
+        axs.axvline(start_i + 1)
+        axs.axvline(end_i)
+    else:
+        raise TypeError('Only arrays of matplotlib.axes objects can be utilized.')
 
 
 class MarkerPlotter:
@@ -249,45 +266,29 @@ class MarkerPlotter:
         self.corrs = MarkerPlotter.CorrVec(*MarkerPlotter.extract_corrs(self.covariances))
         self.corrs_smooth = MarkerPlotter.CorrVec(*MarkerPlotter.extract_corrs(self.covariances_smooth))
 
-    def plot(self, all_frames=True, biplane_frames=True, plot_diff=True):
+    def plot(self, plot_diff=True):
         y_labels = ['Position (mm)', 'Velocity (mm/s)', 'Acceleration (mm/s$^2$)']
         attrs = ['pos', 'vel', 'acc']
         num_figs = len(y_labels)
 
-        filtered_diff = None
-        smoothed_diff = None
+        plot_marker_data(self.trial_name, self.marker_name, y_labels[0], self.raw_md, self.filtered_md,
+                         self.smoothed_md, self.covariances, self.covariances_smooth, 'pos',
+                         0, self.trial.vicon_endpts, add_sd=False, clip_graph=True)
+        current_fig_num = 1
+        for (fig_num, (y_label, attr)) in enumerate(zip(y_labels, attrs)):
+            plot_marker_data(self.trial_name, self.marker_name, y_label, self.raw_md, self.filtered_md,
+                             self.smoothed_md, self.covariances, self.covariances_smooth, attr,
+                             current_fig_num + fig_num, self.trial.vicon_endpts)
         if plot_diff:
             filtered_diff = self.filtered_md.pos - self.raw_md.pos
             smoothed_diff = self.smoothed_md.pos - self.raw_md.pos
+            plot_marker_data_diff(self.trial_name, self.marker_name, 'Filtering Effect (mm)', filtered_diff,
+                                  smoothed_diff, current_fig_num + num_figs, self.trial.vicon_endpts)
+            plot_marker_data_diff_hist(self.trial_name, self.marker_name, 'Filtering Effect (mm)', filtered_diff,
+                                       smoothed_diff, current_fig_num + num_figs + 1, self.trial.vicon_endpts)
 
-        current_fig_num = 0
-        if all_frames:
-            for (fig_num, (y_label, attr)) in enumerate(zip(y_labels, attrs)):
-                plot_marker_data(self.trial_name, self.marker_name, y_label, self.raw_md, self.filtered_md,
-                                 self.smoothed_md, self.covariances, self.covariances_smooth, attr,
-                                 current_fig_num + fig_num, None)
-            if plot_diff:
-                plot_marker_data_diff(self.trial_name, self.marker_name, 'Filtering Effect (mm)', filtered_diff,
-                                      smoothed_diff, current_fig_num + num_figs, None)
-                plot_marker_data_diff_hist(self.trial_name, self.marker_name, 'Filtering Effect (mm)', filtered_diff,
-                                           smoothed_diff, current_fig_num + num_figs + 1, None)
-
-        current_fig_num = (current_fig_num + num_figs + (2 if plot_diff is True else 0)) if all_frames is True else 0
-        if biplane_frames:
-            for (fig_num, (y_label, attr)) in enumerate(zip(y_labels, attrs)):
-                plot_marker_data(self.trial_name, self.marker_name, y_label, self.raw_md, self.filtered_md,
-                                 self.smoothed_md, self.covariances, self.covariances_smooth, attr,
-                                 current_fig_num + fig_num, self.trial.vicon_endpts)
-            if plot_diff:
-                plot_marker_data_diff(self.trial_name, self.marker_name, 'Filtering Effect (mm)', filtered_diff,
-                                      smoothed_diff, current_fig_num + num_figs, self.trial.vicon_endpts)
-                plot_marker_data_diff_hist(self.trial_name, self.marker_name, 'Filtering Effect (mm)', filtered_diff,
-                                           smoothed_diff, current_fig_num + num_figs + 1, self.trial.vicon_endpts)
-
-        current_fig_num = (current_fig_num + num_figs +
-                           (2 if plot_diff is True else 0)) if biplane_frames is True else 0
-        y_labels_var = ['Pos (mm)', 'Vel (mm/s)', 'Acc (mm/s$^2$)']
-        plot_cov(self.trial_name, self.marker_name, self.covariances, self.covariances_smooth, y_labels_var, np.sqrt,
+        current_fig_num = current_fig_num + num_figs + (2 if plot_diff is True else 0)
+        plot_cov(self.trial_name, self.marker_name, self.covariances, self.covariances_smooth, y_labels, np.sqrt,
                  current_fig_num, self.trial.vicon_endpts)
         y_labels_corr = ['Pos Vel Corr', 'Pos Acc Corr', 'Vel Acc Corr']
         plot_cov(self.trial_name, self.marker_name, self.corrs, self.corrs_smooth, y_labels_corr, lambda x: x,

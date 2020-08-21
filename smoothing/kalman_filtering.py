@@ -89,7 +89,8 @@ class LinearKF1DSimdKalman:
         kf = LinearKF1DSimdKalman.create_linear_kalman_filter_1d(self.dt, self.discrete_white_noise_var, self.r)
         # here we iterate over each dimension x, y, z
         for n in range(3):
-            result = kf.compute(marker_data[:, n], 0, initial_value=np.array([marker_data[1, n], 0.0, 0.0]),
+            first_non_nan = marker_data[~np.isnan(marker_data[:, n]), n][0]
+            result = kf.compute(marker_data[:, n], 0, initial_value=np.array([first_non_nan, 0.0, 0.0]),
                                 initial_covariance=self.p, smoothed=True, filtered=True)
             mus.append(result.filtered.states.mean)
             covs.append(result.filtered.states.cov)
