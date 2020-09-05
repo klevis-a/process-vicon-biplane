@@ -71,9 +71,9 @@ class SmoothingDebugPlotter:
             figs.append(hist_diff)
 
         current_fig_num = current_fig_num + num_figs + (2 if plot_diff is True else 0)
-        var_plot = self.plot_cov(title, y_labels, np.sqrt, current_fig_num)
+        var_plot = self.plot_cov(title, y_labels, current_fig_num)
         y_labels_corr = ['Pos Vel Corr', 'Pos Acc Corr', 'Vel Acc Corr']
-        corr_plot = self.plot_cov(title, y_labels_corr, lambda x: x, current_fig_num + 1)
+        corr_plot = self.plot_corr(title, y_labels_corr, current_fig_num + 1)
         figs.append(var_plot)
         figs.append(corr_plot)
 
@@ -124,10 +124,20 @@ class SmoothingDebugPlotter:
         make_interactive()
         return fig
 
-    def plot_cov(self, title, y_labels, process_func, fig_num):
+    def plot_cov(self, title, y_labels, fig_num):
         fig, ax, lines_filtered = cov_trend_graph_init(self.filtered.covars, self.filtered_frames, title, y_labels,
-                                                       fig_num, process_func, 'r-')
-        lines_smooth = cov_trend_graph_add(ax, self.smoothed.covars, self.filtered_frames, process_func, 'g-')
+                                                       fig_num, np.sqrt, 'r-')
+        lines_smooth = cov_trend_graph_add(ax, self.smoothed.covars, self.filtered_frames, np.sqrt, 'g-')
+        fig.legend((lines_filtered[0][0], lines_smooth[0][0]), ('Filtered', 'Smoothed'), 'upper right',
+                   labelspacing=0.1, ncol=2)
+        add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
+        make_interactive()
+        return fig
+
+    def plot_corr(self, title, y_labels, fig_num):
+        fig, ax, lines_filtered = cov_trend_graph_init(self.filtered.corrs, self.filtered_frames, title, y_labels,
+                                                       fig_num, lambda x: x, 'r-')
+        lines_smooth = cov_trend_graph_add(ax, self.smoothed.corrs, self.filtered_frames, lambda x: x, 'g-')
         fig.legend((lines_filtered[0][0], lines_smooth[0][0]), ('Filtered', 'Smoothed'), 'upper right',
                    labelspacing=0.1, ncol=2)
         add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
