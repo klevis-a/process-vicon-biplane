@@ -10,7 +10,7 @@ def create_db(db_dir):
     subject_dfs = [Subject.create_subject_df(subject) for subject in subjects]
     db = pd.concat(subject_dfs, ignore_index=True)
     db[['Subject', 'Trial_Name', 'Subject_Short']] = db[['Subject', 'Trial_Name', 'Subject_Short']].astype('string')
-    db.set_index('Trial_Name', drop=True, inplace=True, verify_integrity=True)
+    db.set_index('Trial_Name', drop=False, inplace=True, verify_integrity=True)
     db.attrs['dt'] = 1/100
 
     anthro_file = db_path / 'Subject_Anthropometrics.csv'
@@ -26,5 +26,6 @@ def pre_initialize(db):
     for trial in db['Trial']:
         trial.humerus_biplane_data
         trial.scapula_biplane_data
-        trial.vicon_data
+        trial.vicon_data_labeled
+        trial.vicon_data_filled
         trial.vicon_endpts
