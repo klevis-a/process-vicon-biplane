@@ -143,3 +143,88 @@ class SmoothingDebugPlotter:
         add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
         make_interactive()
         return fig
+
+
+class SmoothingOutputPlotter(SmoothingDebugPlotter):
+    def __init__(self, trial_name, marker_name, raw, filled, filtered, smoothed, vicon_endpts):
+        super().__init__(trial_name, marker_name, raw, filtered, smoothed, vicon_endpts)
+        self.filled = filled
+
+    def plot(self, plot_diff=True):
+        y_labels = ['Position (mm)', 'Velocity (mm/s)', 'Acceleration (mm/s$^2$)']
+        y_label_diff = 'Filtering Effect (mm)'
+        title = self.trial_name + ' ' + self.marker_name
+
+        figs = []
+        # 0 - pos clipped
+        pos_fig_clip = self.plot_pos_data(title, y_labels[0], 'pos', fig_num=0, add_sd=False, clip_graph=True)
+        figs.append(pos_fig_clip)
+        # 1 - pos all
+        pos_fig_all = self.plot_pos_data(title, y_labels[0], 'pos', fig_num=1, add_sd=False, clip_graph=False)
+        figs.append(pos_fig_all)
+        # 2 - velocity
+        vel_fig = self.plot_marker_data(title, y_labels[1], 'vel', 2)
+        figs.append(vel_fig)
+        # 3 - trend diff
+        trend_diff = self.plot_marker_data_diff(title, y_label_diff, fig_num=3)
+        figs.append(trend_diff)
+        # 4 - hist diff
+        hist_diff = self.plot_marker_data_diff_hist(title, y_label_diff, 4)
+        figs.append(hist_diff)
+
+        return figs
+
+    def plot_pos_data(self, title, y_label, kine_var, fig_num, add_sd=True, clip_graph=False):
+        fig, ax, lines_filled = marker_graph_init(self.filled.means.pos, title, y_label, fig_num, x_data=self.frames,
+                                                  style='r-')
+        lines_raw = marker_graph_add(ax, self.raw.means.pos, self.frames, 'b-')
+        lines_smoothed = marker_graph_add(ax, getattr(self.smoothed.means, kine_var), self.filtered_frames, 'g-')
+
+        if add_sd:
+            marker_graph_add_cov(ax, self.smoothed.means.pos, self.smoothed.covars.pos, self.filtered_frames, 'green')
+        if clip_graph:
+            for c_ax in ax:
+                c_ax.set_xlim(self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
+        else:
+            add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
+        fig.legend((lines_raw[0], lines_filled[0], lines_smoothed[0]), ('Raw', 'Filled', 'Smoothed'), 'upper right',
+                   labelspacing=0.1)
+        make_interactive()
+        return fig
+
+    def plot_marker_data(self, title, y_label, kine_var, fig_num, add_sd=True, clip_graph=False):
+        fig, ax, lines_raw = marker_graph_init(getattr(self.raw.means, kine_var), title, y_label, fig_num,
+                                               x_data=self.frames)
+        lines_smoothed = marker_graph_add(ax, getattr(self.smoothed.means, kine_var), self.filtered_frames, 'g-')
+
+        if add_sd:
+            marker_graph_add_cov(ax, getattr(self.smoothed.means, kine_var), getattr(self.smoothed.covars, kine_var),
+                                 self.filtered_frames, 'green')
+        if clip_graph:
+            for c_ax in ax:
+                c_ax.set_xlim(self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
+        else:
+            add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
+        fig.legend((lines_raw[0], lines_smoothed[0]), ('Raw', 'Smoothed'), 'upper right', labelspacing=0.1)
+        make_interactive()
+        return fig
+
+    def plot_marker_data_diff(self, title, y_label, fig_num):
+        fig, ax, lines_smoothed = marker_graph_init(self.smoothed_pos_diff, title, y_label, fig_num,
+                                                    x_data=self.filtered_frames, style='g-')
+        fig.legend([lines_smoothed[0]], ['Smoothed'], 'upper right', labelspacing=0.1)
+        add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
+        make_interactive()
+        return fig
+
+    def plot_marker_data_diff_hist(self, title, x_label, fig_num, clip_graph=True):
+        if clip_graph:
+            smoothed_diff = self.smoothed_pos_diff[self.vicon_endpts[0]:self.vicon_endpts[1]]
+        else:
+            smoothed_diff = self.smoothed_pos_diff
+
+        fig, ax, lines_smoothed = marker_diff_his_init(smoothed_diff, title, x_label, fig_num, 'green')
+
+        fig.legend([lines_smoothed[0]], ['Smoothed'], 'upper right', labelspacing=0.1)
+        make_interactive()
+        return fig
