@@ -5,19 +5,27 @@ from matplotlib.backends.backend_pdf import PdfPages
 from database import create_db
 from parameters import Params
 from database.dynamic_trial import DynamicTrial
-import graphing.plotters as plotters
+from graphing.plotters import SmoothingOutputPlotter
 import graphing.graph_utils as graph
+from smoothing.kf_filtering_helpers import kf_filter_marker
 
 
 def trial_plotter(trial, dt, subj_dir):
-    trial_pdf = subj_dir / (trial.trial_name + '.pdf')
-    with PdfPages(trial_pdf) as pdf_file:
-        for marker in DynamicTrial.MARKERS:
-            if marker in trial.vicon_data_labeled.columns:
-                marker_plotter = plotters.LabeledFilledMarkerPlotter(trial, marker, dt)
-                fig = marker_plotter.plot()
-                pdf_file.savefig(fig)
-                plt.close(fig)
+    trial_dir = subj_dir / trial.trial_name
+    trial_dir.mkdir(parents=True, exist_ok=True)
+    print('Smoothing trial {}'.format(trial.trial_name))
+    for marker in DynamicTrial.MARKERS:
+        if marker in trial.vicon_data_labeled.columns:
+            marker_pdf = trial_dir / (marker + '.pdf')
+            with PdfPages(marker_pdf) as pdf_file:
+                raw, filled, filtered, smoothed = kf_filter_marker(trial, marker, dt=dt)
+                marker_plotter = SmoothingOutputPlotter(trial.trial_name, marker, raw, filled, filtered, smoothed,
+                                                        trial.vicon_endpts)
+                figs = marker_plotter.plot()
+                for fig in figs:
+                    pdf_file.savefig(fig)
+                    fig.clf()
+                    plt.close(fig)
 
 
 # ready db
