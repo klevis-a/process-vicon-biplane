@@ -111,8 +111,18 @@ class SmoothingDebugPlotter:
 
     def plot_marker_data_diff_hist(self, title, x_label, fig_num, clip_graph=True):
         if clip_graph:
-            filtered_diff = self.filtered_pos_diff[self.vicon_endpts[0]:self.vicon_endpts[1]]
-            smoothed_diff = self.smoothed_pos_diff[self.vicon_endpts[0]:self.vicon_endpts[1]]
+            endpts = np.zeros((2,), dtype=np.int)
+
+            if self.vicon_endpts[0] > self.filtered.endpts[0]:
+                endpts[0] = self.vicon_endpts[0] - self.filtered.endpts[0]
+
+            if self.vicon_endpts[1] < self.filtered.endpts[1]:
+                endpts[1] = self.vicon_endpts[1] - self.filtered.endpts[0]
+            else:
+                endpts[1] = self.filtered.endpts[1]
+
+            filtered_diff = self.filtered_pos_diff[endpts[0]:endpts[1]]
+            smoothed_diff = self.smoothed_pos_diff[endpts[0]:endpts[1]]
         else:
             filtered_diff = self.filtered_pos_diff
             smoothed_diff = self.smoothed_pos_diff
@@ -219,7 +229,17 @@ class SmoothingOutputPlotter(SmoothingDebugPlotter):
 
     def plot_marker_data_diff_hist(self, title, x_label, fig_num, clip_graph=True):
         if clip_graph:
-            smoothed_diff = self.smoothed_pos_diff[self.vicon_endpts[0]:self.vicon_endpts[1]]
+            endpts = np.zeros((2,), dtype=np.int)
+
+            if self.vicon_endpts[0] > self.filtered.endpts[0]:
+                endpts[0] = self.vicon_endpts[0] - self.filtered.endpts[0]
+
+            if self.vicon_endpts[1] < self.filtered.endpts[1]:
+                endpts[1] = self.vicon_endpts[1] - self.filtered.endpts[0]
+            else:
+                endpts[1] = self.filtered.endpts[1]
+
+            smoothed_diff = self.smoothed_pos_diff[endpts[0]:endpts[1]]
         else:
             smoothed_diff = self.smoothed_pos_diff
 

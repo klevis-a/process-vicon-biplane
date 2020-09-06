@@ -30,8 +30,8 @@ def x0_guess(marker_pos_labeled, marker_pos_filled, dt, points_to_filter, points
     start_idx, stop_idx = init_point(marker_pos_labeled, marker_pos_filled)
     x0_pos = pos_lowpass_filter(marker_pos_filled, start_idx, num_points=points_to_filter)
     x0_vel = np.gradient(x0_pos, dt, axis=0)
-    x0_acc = np.gradient(x0_pos, dt, axis=0)
-    x0 = np.array([np.mean(x0_pos[0:points_to_average], axis=0), np.mean(x0_vel[0:points_to_average], axis=0),
+    x0_acc = np.gradient(x0_vel, dt, axis=0)
+    x0 = np.array([x0_pos[0], np.mean(x0_vel[0:points_to_average], axis=0),
                    np.mean(x0_acc[0:points_to_average], axis=0)]).T
     return x0, start_idx, stop_idx
 
