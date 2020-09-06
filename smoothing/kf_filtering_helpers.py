@@ -6,6 +6,10 @@ from smoothing.kalman_filtering import LinearKF1DSimdKalman
 FilterStep = namedtuple('FilterStep', ['endpts', 'indices', 'means', 'covars', 'corrs'])
 
 
+class InsufficientDataError(Exception):
+    pass
+
+
 def init_point(marker_pos_labeled, marker_pos_filled):
     non_nan_indices_labeled = np.nonzero(~np.isnan(marker_pos_labeled[:, 0]))[0]
     non_nan_indices_filled = np.nonzero(~np.isnan(marker_pos_filled[:, 0]))[0]
@@ -28,6 +32,10 @@ def pos_lowpass_filter(marker_pos_filled, start, num_points):
 
 def x0_guess(marker_pos_labeled, marker_pos_filled, dt, points_to_filter, points_to_average):
     start_idx, stop_idx = init_point(marker_pos_labeled, marker_pos_filled)
+    if stop_idx - start_idx < 20:
+        raise InsufficientDataError
+    if start_idx + points_to_filter > stop_idx:
+        points_to_filter = stop_idx - start_idx
     x0_pos = pos_lowpass_filter(marker_pos_filled, start_idx, num_points=points_to_filter)
     x0_vel = np.gradient(x0_pos, dt, axis=0)
     x0_acc = np.gradient(x0_vel, dt, axis=0)
