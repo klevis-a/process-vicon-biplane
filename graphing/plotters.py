@@ -51,30 +51,41 @@ class SmoothingDebugPlotter:
 
     def plot(self, plot_diff=True):
         y_labels = ['Position (mm)', 'Velocity (mm/s)', 'Acceleration (mm/s$^2$)']
+        y_labels_corr = ['Pos Vel Corr', 'Pos Acc Corr', 'Vel Acc Corr']
         attrs = ['pos', 'vel', 'acc']
-        num_figs = len(y_labels)
         title = self.trial_name + ' ' + self.marker_name
 
+        current_fig_num = 0
         figs = []
-        pos_fig = self.plot_marker_data(title, y_labels[0], 'pos', fig_num=0, add_sd=False, clip_graph=True)
+        pos_fig = self.plot_marker_data(title, y_labels[0], 'pos', current_fig_num, add_sd=False, clip_graph=True)
+        current_fig_num += 1
         figs.append(pos_fig)
 
-        current_fig_num = 1
-        for (fig_num, (y_label, attr)) in enumerate(zip(y_labels, attrs)):
-            kine_fig = self.plot_marker_data(title, y_label, attr, current_fig_num + fig_num)
+        for (y_label, attr) in zip(y_labels, attrs):
+            kine_fig = self.plot_marker_data(title, y_label, attr, current_fig_num)
+            current_fig_num += 1
             figs.append(kine_fig)
 
+        smooth_vel = self.plot_marker_data_smooth(title, y_labels[1], 'vel', current_fig_num)
+        current_fig_num += 1
+        figs.append(smooth_vel)
+        smooth_acc = self.plot_marker_data_smooth(title, y_labels[2], 'acc', current_fig_num)
+        current_fig_num += 1
+        figs.append(smooth_acc)
+
         if plot_diff:
-            trend_diff = self.plot_marker_data_diff(title, 'Filtering Effect (mm)', fig_num=current_fig_num + num_figs)
-            hist_diff = self.plot_marker_data_diff_hist(title, 'Filtering Effect (mm)', current_fig_num + num_figs + 1)
+            trend_diff = self.plot_marker_data_diff(title, 'Filtering Effect (mm)', current_fig_num)
+            current_fig_num += 1
             figs.append(trend_diff)
+            hist_diff = self.plot_marker_data_diff_hist(title, 'Filtering Effect (mm)', current_fig_num)
+            current_fig_num += 1
             figs.append(hist_diff)
 
-        current_fig_num = current_fig_num + num_figs + (2 if plot_diff is True else 0)
         var_plot = self.plot_cov(title, y_labels, current_fig_num)
-        y_labels_corr = ['Pos Vel Corr', 'Pos Acc Corr', 'Vel Acc Corr']
-        corr_plot = self.plot_corr(title, y_labels_corr, current_fig_num + 1)
+        current_fig_num += 1
         figs.append(var_plot)
+        corr_plot = self.plot_corr(title, y_labels_corr, current_fig_num)
+        current_fig_num += 1
         figs.append(corr_plot)
 
         return figs
@@ -97,6 +108,14 @@ class SmoothingDebugPlotter:
             add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
         fig.legend((lines_raw[0], lines_filtered[0], lines_smoothed[0]), ('Raw', 'Filtered', 'Smoothed'), 'upper right',
                    labelspacing=0.1)
+        make_interactive()
+        return fig
+
+    def plot_marker_data_smooth(self, title, y_label, kine_var, fig_num):
+        fig, ax, lines_smoothed = marker_graph_init(getattr(self.smoothed.means, kine_var), title, y_label, fig_num,
+                                                    x_data=self.filtered_frames, style='g-')
+        fig.legend([lines_smoothed[0]], ['Smoothed'], 'upper right', labelspacing=0.1)
+        add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
         make_interactive()
         return fig
 
