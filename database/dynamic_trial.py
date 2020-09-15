@@ -90,12 +90,17 @@ class DynamicTrial:
 
     @property
     def vicon_data_labeled(self):
+        # TODO: this works fine for now and by using the accessor method below we get a view (rather than a copy) of the
+        #  data, however it probably makes sense to using something like structured arrays or xarray. Note that
+        #  multi-level column labels should not be used (i.e. header=[0, 1) because a copy of the data, not a view is
+        #  returned
         if self._vicon_data_labeled is None:
-            self._vicon_data_labeled = pd.read_csv(self.vicon_csv_file_labeled, header=[0, 1])
+            self._vicon_data_labeled = pd.read_csv(self.vicon_csv_file_labeled, header=[0], skiprows=[1],
+                                                   dtype=np.float64)
         return self._vicon_data_labeled
 
     def marker_data_labeled_df(self, marker_name):
-        return self.vicon_data_labeled[marker_name]
+        return self.vicon_data_labeled.loc[:, marker_name:(marker_name+'.2')]
 
     def marker_data_labeled(self, marker_name):
         return self.marker_data_labeled_df(marker_name).to_numpy()
@@ -103,11 +108,12 @@ class DynamicTrial:
     @property
     def vicon_data_filled(self):
         if self._vicon_data_filled is None:
-            self._vicon_data_filled = pd.read_csv(self.vicon_csv_file_filled, header=[0, 1])
+            self._vicon_data_filled = pd.read_csv(self.vicon_csv_file_filled, header=[0], skiprows=[1],
+                                                  dtype=np.float64)
         return self._vicon_data_filled
 
     def marker_data_filled_df(self, marker_name):
-        return self.vicon_data_filled[marker_name]
+        return self.vicon_data_filled.loc[:, marker_name:(marker_name+'.2')]
 
     def marker_data_filled(self, marker_name):
         return self.marker_data_filled_df(marker_name).to_numpy()
