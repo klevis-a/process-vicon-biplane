@@ -9,18 +9,28 @@ from matplotlib import axes
 from pythonGraphingLibrary import plotUtils
 
 
+class MplStyle:
+    def __init__(self, color, ls='-', lw=2, marker='', ms=4):
+        self.color = color
+        self.ls = ls
+        self.lw = lw
+        self.marker = marker
+        self.ms = ms
+
+
 def init_graphing():
     rcParams['font.family'] = 'sans-serif'
     rcParams['font.sans-serif'] = ['Arial']
     matplotlib.use('Qt5Agg')
 
 
-def marker_graph_init(marker_data, title, y_label, fig_num, x_data, style='b-'):
+def marker_graph_init(marker_data, title, y_label, fig_num, x_data, style=MplStyle('blue')):
     fig = plt.figure(num=fig_num)
     ax = fig.subplots(3, 1, sharex=True)
     lines = []
     for n in range(3):
-        current_line, = ax[n].plot(x_data, marker_data[:, n], style, markersize=2)
+        current_line, = ax[n].plot(x_data, marker_data[:, n], linestyle=style.ls, linewidth=style.lw,
+                                   marker=style.marker, markersize=style.ms, color=style.color)
         lines.append(current_line)
         plotUtils.update_spines(ax[n])
         plotUtils.update_xticks(ax[n], font_size=8)
@@ -39,10 +49,11 @@ def marker_graph_init(marker_data, title, y_label, fig_num, x_data, style='b-'):
     return fig, ax, lines
 
 
-def marker_graph_add(ax, marker_data, x_data, style):
+def marker_graph_add(ax, marker_data, x_data, style=MplStyle('green')):
     lines = []
     for n in range(3):
-        current_line, = ax[n].plot(x_data, marker_data[:, n], style)
+        current_line, = ax[n].plot(x_data, marker_data[:, n], linestyle=style.ls, linewidth=style.lw,
+                                   marker=style.marker, markersize=style.ms, color=style.color)
         lines.append(current_line)
     return lines
 
@@ -51,8 +62,7 @@ def marker_graph_add_cov(ax, marker_data, cov_data, x_data, color):
     polys = []
     for n in range(3):
         sd = np.sqrt(cov_data[:, n])
-        poly = ax[n].fill_between(x_data, marker_data[:, n] - sd, marker_data[:, n] + sd, color=color,
-                                  alpha=0.2)
+        poly = ax[n].fill_between(x_data, marker_data[:, n] - sd, marker_data[:, n] + sd, color=color, alpha=0.2)
         polys.append(poly)
     return polys
 
@@ -100,7 +110,8 @@ def cov_trend_graph_init(variance_data, x_data, title, y_labels, fig_num, proces
         # iterate over dimension
         dim_lines = []
         for j in range(3):
-            line, = ax[i, j].plot(x_data, process_func(variance_data[i][:, j]), style)
+            line, = ax[i, j].plot(x_data, process_func(variance_data[i][:, j]), linestyle=style.ls, linewidth=style.lw,
+                                  marker=style.marker, markersize=style.ms, color=style.color)
             dim_lines.append(line)
             plotUtils.update_spines(ax[i, j])
             plotUtils.update_xticks(ax[i, j], font_size=8)
@@ -128,7 +139,8 @@ def cov_trend_graph_add(ax, variance_data, x_data, process_func, style):
         # iterate over dimension
         dim_lines = []
         for j in range(3):
-            line, = ax[i, j].plot(x_data, process_func(variance_data[i][:, j]), style)
+            line, = ax[i, j].plot(x_data, process_func(variance_data[i][:, j]), linestyle=style.ls, linewidth=style.lw,
+                                  marker=style.marker, markersize=style.ms, color=style.color)
             dim_lines.append(line)
         lines.append(dim_lines)
     return lines

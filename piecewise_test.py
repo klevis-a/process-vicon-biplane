@@ -8,7 +8,8 @@ from database import create_db
 from parameters import Params
 import graphing.graph_utils as graph
 from graphing.plotters import SmoothingOutputPlotter
-from smoothing.kf_filtering_helpers import kf_filter_marker_all, post_process_raw
+from smoothing.kf_filtering_helpers import kf_filter_marker_all, post_process_raw, kf_filter_marker_piecewise, \
+    combine_pieces
 
 # ready db
 params = Params.get_params(sys.argv[1])
@@ -19,6 +20,9 @@ trial_row = db.loc[params.trial_name]
 trial = trial_row.Trial
 raw, filled = post_process_raw(trial, params.marker_name, dt=db.attrs['dt'])
 filtered, smoothed = kf_filter_marker_all(trial, params.marker_name, dt=db.attrs['dt'])
+filtered_pieces, smoothed_pieces = kf_filter_marker_piecewise(trial, params.marker_name, dt=db.attrs['dt'])
+filtered = combine_pieces(filtered_pieces)
+smoothed = combine_pieces(smoothed_pieces)
 
 # graphing
 graph.init_graphing()

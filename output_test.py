@@ -7,7 +7,7 @@ from parameters import Params
 from database.dynamic_trial import DynamicTrial
 from graphing.plotters import SmoothingOutputPlotter
 import graphing.graph_utils as graph
-from smoothing.kf_filtering_helpers import kf_filter_marker, InsufficientDataError
+from smoothing.kf_filtering_helpers import kf_filter_marker_all, InsufficientDataError
 
 
 def trial_plotter(trial, dt, subj_dir):
@@ -20,7 +20,7 @@ def trial_plotter(trial, dt, subj_dir):
             if marker in trial.vicon_data_labeled.columns:
                 marker_pdf_file = trial_dir / (marker + '.pdf')
                 try:
-                    raw, filled, filtered, smoothed = kf_filter_marker(trial, marker, dt=dt)
+                    raw, filled, filtered, smoothed = kf_filter_marker_all(trial, marker, dt=dt)
                 except InsufficientDataError:
                     print('Skipping marker {} for trial {} because there is insufficient data to filter.'
                           .format(marker, trial.trial_name))
