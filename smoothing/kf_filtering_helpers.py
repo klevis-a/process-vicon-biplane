@@ -3,6 +3,9 @@ from scipy.signal import butter, sosfiltfilt
 from collections import namedtuple
 from smoothing.kalman_filtering import LinearKF1DSimdKalman, LinearKF
 from misc.np_utils import find_runs
+import logging
+log = logging.getLogger('kf_smoothing')
+
 
 FilterStep = namedtuple('FilterStep', ['endpts', 'indices', 'means', 'covars', 'corrs'])
 
@@ -40,8 +43,8 @@ def x0_guess(marker_pos_labeled, marker_pos_filled, dt, points_to_filter, points
     x0_pos = pos_lowpass_filter(marker_pos_filled, start_idx, num_points=points_to_filter)
     x0_vel = np.gradient(x0_pos, dt, axis=0)
     x0_acc = np.gradient(x0_vel, dt, axis=0)
-    x0 = np.array([x0_pos[0], np.mean(x0_vel[0:points_to_average], axis=0),
-                   np.mean(x0_acc[0:points_to_average], axis=0)]).T
+    x0 = np.array([x0_pos[0, :], np.mean(x0_vel[0:points_to_average, :], axis=0),
+                   np.mean(x0_acc[0:points_to_average, :], axis=0)]).T
     return x0, start_idx, stop_idx
 
 
@@ -113,12 +116,16 @@ def kf_filter_marker_piecewise(trial, marker_name, dt, max_gap=75, min_length=75
 
     filtered_pieces = []
     smoothed_pieces = []
+    piece_number = 1
     for i in range(num_pieces):
         if (pieces_end_idx[i] - pieces_start_idx[i]) > min_length:
+            log.info('Filtering piece %d running from %d to %d for trial %s marker %s.', piece_number,
+                     pieces_start_idx[i], pieces_end_idx[i], trial.trial_name, marker_name)
             piece_filtered, piece_smoothed = kf_filter_marker_piece(marker_pos_labeled, marker_pos_filled,
                                                                     pieces_start_idx[i], pieces_end_idx[i], dt)
             filtered_pieces.append(piece_filtered)
             smoothed_pieces.append(piece_smoothed)
+            piece_number += 1
 
     return filtered_pieces, smoothed_pieces
 

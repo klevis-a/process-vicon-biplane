@@ -51,7 +51,6 @@ class LinearKF1DFilterPy(LinearKF):
     # this class has not gotten updated to conform to the new framework but I have left it here so the interaction with
     # FilterPy is documented somewhere
     def __init__(self, dt, discrete_white_noise_var, r, p):
-        print('Using: %s' % self.__class__.__name__)
         self.dt = dt
         self.discrete_white_noise_var = discrete_white_noise_var
         self.r = r
@@ -105,7 +104,6 @@ class LinearKF1DFilterPy(LinearKF):
 
 class LinearKF1DSimdKalman(LinearKF):
     def __init__(self, dt, discrete_white_noise_var, r):
-        print('Using: %s' % self.__class__.__name__)
         self.dt = dt
         self.discrete_white_noise_var = discrete_white_noise_var
         self.r = r
