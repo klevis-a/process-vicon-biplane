@@ -1,4 +1,6 @@
 import numpy as np
+import itertools
+from operator import itemgetter
 from scipy.signal import butter, sosfiltfilt
 from collections import namedtuple
 from smoothing.kalman_filtering import LinearKF1DSimdKalman, LinearKF
@@ -121,15 +123,30 @@ def kf_filter_marker_piecewise(trial, marker_name, dt, max_gap=75, max_gap_secon
             secondary_runs_gaps_idx_start.append(runs_secondary_gaps_idx[i])
             secondary_runs_gaps_idx_end.append(runs_secondary_gaps_idx[i+1]+1)
 
-    runs_gaps_idx_start = np.sort(np.concatenate((primary_runs_gaps_idx_start,
-                                                  np.asarray(secondary_runs_gaps_idx_start, dtype=np.int64))))
-    runs_gaps_idx_end = np.sort(np.concatenate((primary_runs_gaps_idx_end,
-                                                np.asarray(secondary_runs_gaps_idx_end, dtype=np.int64))))
+    # now let's combine the gaps
+    all_runs_gaps_idx = \
+        list(itertools.chain.from_iterable([zip(primary_runs_gaps_idx_start, primary_runs_gaps_idx_end),
+                                            zip(secondary_runs_gaps_idx_start, secondary_runs_gaps_idx_end)]))
+    # sort on the start index
+    all_runs_gaps_idx.sort(key=itemgetter(0))
 
-    num_pieces = runs_gaps_idx_start.size + 1
+    # maintain the gap with the longest length if there are duplicates
+    runs_gaps_idx_start = []
+    runs_gaps_idx_end = []
+    previous_gap_start = -1
+    for (gap_start, gap_end) in all_runs_gaps_idx:
+        if gap_start == previous_gap_start:
+            if gap_end > runs_gaps_idx_end[-1]:
+                runs_gaps_idx_end[-1] = gap_end
+        else:
+            runs_gaps_idx_start.append(gap_start)
+            runs_gaps_idx_end.append(gap_end)
+        previous_gap_start = gap_start
+
+    num_pieces = len(runs_gaps_idx_start) + 1
     pieces_end_idx = np.full((num_pieces, ), stop_idx)
     pieces_start_idx = np.full((num_pieces,), start_idx)
-    if runs_gaps_idx_start.size != 0:
+    if len(runs_gaps_idx_start) != 0:
         pieces_end_idx[:-1] = runs[1][runs_gaps_idx_start] + start_idx
         pieces_start_idx[1:] = runs[1][runs_gaps_idx_end] + start_idx
 
