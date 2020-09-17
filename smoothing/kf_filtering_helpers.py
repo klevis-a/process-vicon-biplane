@@ -100,40 +100,64 @@ def kf_filter_marker_all(trial, marker_name, dt):
     return filtered, smoothed
 
 
-def kf_filter_marker_piecewise(trial, marker_name, dt, max_gap=75, min_length=75):
+def kf_filter_marker_piecewise(trial, marker_name, dt, max_gap=75, max_gap_secondary=(30, 10), min_length=75):
     marker_pos_labeled = trial.marker_data_labeled(marker_name)
     marker_pos_filled = trial.marker_data_filled(marker_name)
 
     start_idx, stop_idx = init_point(marker_pos_labeled, marker_pos_filled)
-    runs = find_runs(~np.isnan(marker_pos_labeled[start_idx:stop_idx, 0]))
-    # no data for longer than max_gap
-    runs_gaps_idx = np.nonzero(((~runs[0]) & (runs[2] >= max_gap)))[0]
-    num_pieces = runs_gaps_idx.size + 1
+    nans_labeled = ~np.isnan(marker_pos_labeled[start_idx:stop_idx, 0])
+    runs = find_runs(nans_labeled)
+    # primary gaps - no data for longer than max_gap
+    primary_runs_gaps_idx_start = np.nonzero(((~runs[0]) & (runs[2] >= max_gap)))[0]
+    primary_runs_gaps_idx_end = primary_runs_gaps_idx_start + 1
+
+    # secondary gaps - gaps of max_gap_secondary[0] separated by spaces where at most max_gap_secondary[1] data exists
+    runs_secondary_gaps_idx = np.nonzero(((~runs[0]) & (runs[2] >= max_gap_secondary[0])))[0]
+    secondary_runs_gaps_idx_start = []
+    secondary_runs_gaps_idx_end = []
+    for i in range(runs_secondary_gaps_idx.size-1):
+        if np.sum(runs[0][runs_secondary_gaps_idx[i]+1:runs_secondary_gaps_idx[i+1]] *
+                  runs[2][runs_secondary_gaps_idx[i]+1:runs_secondary_gaps_idx[i+1]]) < max_gap_secondary[1]:
+            secondary_runs_gaps_idx_start.append(runs_secondary_gaps_idx[i])
+            secondary_runs_gaps_idx_end.append(runs_secondary_gaps_idx[i+1]+1)
+
+    runs_gaps_idx_start = np.sort(np.concatenate((primary_runs_gaps_idx_start,
+                                                  np.asarray(secondary_runs_gaps_idx_start, dtype=np.int64))))
+    runs_gaps_idx_end = np.sort(np.concatenate((primary_runs_gaps_idx_end,
+                                                np.asarray(secondary_runs_gaps_idx_end, dtype=np.int64))))
+
+    num_pieces = runs_gaps_idx_start.size + 1
     pieces_end_idx = np.full((num_pieces, ), stop_idx)
-    pieces_end_idx[:-1] = runs[1][runs_gaps_idx]
     pieces_start_idx = np.full((num_pieces,), start_idx)
-    pieces_start_idx[1:] = runs[1][runs_gaps_idx + 1]
+    if runs_gaps_idx_start.size != 0:
+        pieces_end_idx[:-1] = runs[1][runs_gaps_idx_start] + start_idx
+        pieces_start_idx[1:] = runs[1][runs_gaps_idx_end] + start_idx
 
     filtered_pieces = []
     smoothed_pieces = []
-    piece_number = 1
     for i in range(num_pieces):
-        if (pieces_end_idx[i] - pieces_start_idx[i]) > min_length:
-            log.info('Filtering piece %d running from %d to %d for trial %s marker %s.', piece_number,
+        if (pieces_end_idx[i] - pieces_start_idx[i]) < min_length:
+            log.info('Skipping Filtering piece %d running from %d to %d for trial %s marker %s.', i,
                      pieces_start_idx[i], pieces_end_idx[i], trial.trial_name, marker_name)
-            piece_filtered, piece_smoothed = kf_filter_marker_piece(marker_pos_labeled, marker_pos_filled,
-                                                                    pieces_start_idx[i], pieces_end_idx[i], dt)
-            filtered_pieces.append(piece_filtered)
-            smoothed_pieces.append(piece_smoothed)
-            piece_number += 1
+            continue
+
+        log.info('Filtering piece %d running from %d to %d for trial %s marker %s.', i,
+                 pieces_start_idx[i], pieces_end_idx[i], trial.trial_name, marker_name)
+        piece_filtered, piece_smoothed = kf_filter_marker_piece(marker_pos_labeled, marker_pos_filled,
+                                                                pieces_start_idx[i], pieces_end_idx[i], dt)
+        filtered_pieces.append(piece_filtered)
+        smoothed_pieces.append(piece_smoothed)
+
+    if not filtered_pieces:
+        raise InsufficientDataError('No resulting segments to filter.')
 
     return filtered_pieces, smoothed_pieces
 
 
 def combine_pieces(pieces):
-    endpts = (pieces[0].endpts[0], pieces[-1].endpts[-1])
+    endpts = (pieces[0].endpts[0], pieces[-1].endpts[1])
     indices = np.arange(*endpts)
-    num_frames = endpts[-1] - endpts[0]
+    num_frames = endpts[1] - endpts[0]
     pos = np.full((num_frames, 3), np.nan, dtype=np.float64)
     vel = np.full((num_frames, 3), np.nan, dtype=np.float64)
     acc = np.full((num_frames, 3), np.nan, dtype=np.float64)
@@ -148,18 +172,19 @@ def combine_pieces(pieces):
     vel_acc_corr = np.full((num_frames, 3), np.nan, dtype=np.float64)
 
     for piece in pieces:
-        pos[piece.endpts[0]:piece.endpts[1], :] = piece.means.pos
-        vel[piece.endpts[0]:piece.endpts[1], :] = piece.means.vel
-        acc[piece.endpts[0]:piece.endpts[1], :] = piece.means.acc
-        pos_cov[piece.endpts[0]:piece.endpts[1], :] = piece.covars.pos
-        vel_cov[piece.endpts[0]:piece.endpts[1], :] = piece.covars.vel
-        acc_cov[piece.endpts[0]:piece.endpts[1], :] = piece.covars.acc
-        pos_vel_cov[piece.endpts[0]:piece.endpts[1], :] = piece.covars.pos_vel
-        pos_acc_cov[piece.endpts[0]:piece.endpts[1], :] = piece.covars.pos_acc
-        vel_acc_cov[piece.endpts[0]:piece.endpts[1], :] = piece.covars.vel_acc
-        pos_vel_corr[piece.endpts[0]:piece.endpts[1], :] = piece.corrs.pos_vel
-        pos_acc_corr[piece.endpts[0]:piece.endpts[1], :] = piece.corrs.pos_acc
-        vel_acc_corr[piece.endpts[0]:piece.endpts[1], :] = piece.corrs.vel_acc
+        slc = np.s_[piece.endpts[0]-endpts[0]:piece.endpts[1]-endpts[0], :]
+        pos[slc] = piece.means.pos
+        vel[slc] = piece.means.vel
+        acc[slc] = piece.means.acc
+        pos_cov[slc] = piece.covars.pos
+        vel_cov[slc] = piece.covars.vel
+        acc_cov[slc] = piece.covars.acc
+        pos_vel_cov[slc] = piece.covars.pos_vel
+        pos_acc_cov[slc] = piece.covars.pos_acc
+        vel_acc_cov[slc] = piece.covars.vel_acc
+        pos_vel_corr[slc] = piece.corrs.pos_vel
+        pos_acc_corr[slc] = piece.corrs.pos_acc
+        vel_acc_corr[slc] = piece.corrs.vel_acc
 
     means = LinearKF.StateMeans(pos, vel, acc)
     cov = LinearKF.CovarianceVec(pos_cov, vel_cov, acc_cov, pos_vel_cov, pos_acc_cov, vel_acc_cov)

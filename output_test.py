@@ -7,21 +7,35 @@ from parameters import Params
 from database.dynamic_trial import DynamicTrial
 from graphing.plotters import SmoothingOutputPlotter
 import graphing.graph_utils as graph
-from smoothing.kf_filtering_helpers import kf_filter_marker_all, InsufficientDataError
+from smoothing.kf_filtering_helpers import post_process_raw, kf_filter_marker_piecewise, combine_pieces, \
+    InsufficientDataError
+import logging
+from logging.config import fileConfig
+
+fileConfig('logging_config.ini', disable_existing_loggers=False)
+log = logging.getLogger('kf_smoothing')
 
 
 def trial_plotter(trial, dt, subj_dir):
+    print('Smoothing trial {}'.format(trial.trial_name))
+    log.info('Smoothing trial %s', trial.trial_name)
     trial_dir = subj_dir / trial.trial_name
     trial_dir.mkdir(parents=True, exist_ok=True)
-    print('Smoothing trial {}'.format(trial.trial_name))
-    trial_pdf_file = trial_dir / (trial.trial_name + '.pdf')
+    trial_pdf_file = subj_dir / (trial.trial_name + '.pdf')
     with PdfPages(trial_pdf_file) as trial_pdf:
         for marker in DynamicTrial.MARKERS:
             if marker in trial.vicon_data_labeled.columns:
+                print('    Smoothing marker {}'.format(marker))
+                log.info('Smoothing marker %s', marker)
                 marker_pdf_file = trial_dir / (marker + '.pdf')
                 try:
-                    raw, filled, filtered, smoothed = kf_filter_marker_all(trial, marker, dt=dt)
+                    raw, filled = post_process_raw(trial, marker, dt=dt)
+                    filtered_pieces, smoothed_pieces = kf_filter_marker_piecewise(trial, marker, dt=dt)
+                    filtered = combine_pieces(filtered_pieces)
+                    smoothed = combine_pieces(smoothed_pieces)
                 except InsufficientDataError:
+                    log.warning('Skipping marker %s for trial %s because there is insufficient data to filter',
+                                marker, trial.trial_name)
                     print('Skipping marker {} for trial {} because there is insufficient data to filter.'
                           .format(marker, trial.trial_name))
                     continue
@@ -45,6 +59,7 @@ graph.init_graphing()
 
 # create plots
 for subject_name, subject_df in db.groupby('Subject'):
+    log.info('Smoothing subject %s', subject_name)
     subject_dir = (root_path / subject_name)
     subject_dir.mkdir(parents=True, exist_ok=True)
     subject_df['Trial'].apply(trial_plotter, args=(db.attrs['dt'], subject_dir))
