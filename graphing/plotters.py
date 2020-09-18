@@ -4,33 +4,32 @@ from graphing.graph_utils import marker_graph_init, marker_graph_add, add_vicon_
 
 
 class LabeledMarkerPloter:
-    def __init__(self, trial, marker_name, dt):
+    def __init__(self, trial, marker_name):
         self.trial = trial
         self.marker_name = marker_name
-        self.dt = dt
         self.marker_pos_labeled = self.trial.marker_data_labeled(marker_name)
-        self.frame_nums = np.arange(self.marker_pos_labeled.shape[0])
+        self.frame_nums = np.arange(self.marker_pos_labeled.shape[0]) + 1
 
     def plot(self):
         fig, ax, _ = marker_graph_init(self.marker_pos_labeled, self.trial.trial_name + ' ' + self.marker_name,
-                                       'Pos (mm)', fig_num=0, x_data=self.frame_nums + 1)
+                                       'Pos (mm)', fig_num=0, x_data=self.frame_nums)
         add_vicon_start_stop(ax, self.trial.vicon_endpts[0] + 1, self.trial.vicon_endpts[1])
         make_interactive()
         return fig
 
 
 class LabeledFilledMarkerPlotter(LabeledMarkerPloter):
-    def __init__(self, trial, marker_name, dt):
-        super().__init__(trial, marker_name, dt)
+    def __init__(self, trial, marker_name):
+        super().__init__(trial, marker_name)
         self.marker_pos_filled = self.trial.marker_data_filled(marker_name)
 
     def plot(self):
         fig, ax, _ = marker_graph_init(self.marker_pos_filled, self.trial.trial_name + ' ' + self.marker_name,
-                                       'Pos (mm)', fig_num=0, x_data=self.frame_nums + 1, style='r-')
-        marker_graph_add(ax, self.marker_pos_labeled, self.frame_nums + 1, 'b-')
+                                       'Pos (mm)', fig_num=0, x_data=self.frame_nums, style=MplStyle('red'))
+        marker_graph_add(ax, self.marker_pos_labeled, self.frame_nums, MplStyle('indigo', marker='.'))
         add_vicon_start_stop(ax, self.trial.vicon_endpts[0] + 1, self.trial.vicon_endpts[1])
         make_interactive()
-        return fig
+        return [fig]
 
 
 class SmoothingDebugPlotter:
