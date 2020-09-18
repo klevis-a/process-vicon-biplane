@@ -34,6 +34,11 @@ def trial_plotter(trial, dt, subj_dir):
                     filtered = combine_pieces(filtered_pieces)
                     smoothed = combine_pieces(smoothed_pieces)
                 except InsufficientDataError:
+                    temp_fig = plt.figure()
+                    temp_fig.suptitle(marker + ' Insufficient Data', fontsize=11, fontweight='bold')
+                    trial_pdf.savefig(temp_fig)
+                    temp_fig.clf()
+                    plt.close(temp_fig)
                     log.warning('Skipping marker %s for trial %s because there is insufficient data to filter',
                                 marker, trial.trial_name)
                     print('Skipping marker {} for trial {} because there is insufficient data to filter.'
@@ -49,6 +54,14 @@ def trial_plotter(trial, dt, subj_dir):
                             trial_pdf.savefig(fig)
                         fig.clf()
                         plt.close(fig)
+            else:
+                print('    Marker {} missing'.format(marker))
+                log.warning('Marker %s missing', marker)
+                temp_fig = plt.figure()
+                temp_fig.suptitle(marker, fontsize=11, fontweight='bold')
+                trial_pdf.savefig(temp_fig)
+                temp_fig.clf()
+                plt.close(temp_fig)
 
 
 # ready db
