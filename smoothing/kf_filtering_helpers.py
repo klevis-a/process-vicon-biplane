@@ -127,28 +127,51 @@ def kf_filter_marker_piecewise(trial, marker_name, dt, max_gap=75, max_gap_secon
     all_runs_gaps_idx = \
         list(itertools.chain.from_iterable([zip(primary_runs_gaps_idx_start, primary_runs_gaps_idx_end),
                                             zip(secondary_runs_gaps_idx_start, secondary_runs_gaps_idx_end)]))
-    # sort on the start index
-    all_runs_gaps_idx.sort(key=itemgetter(0))
 
-    # maintain the gap with the longest length if there are duplicates
-    runs_gaps_idx_start = []
-    runs_gaps_idx_end = []
-    previous_gap_start = -1
-    for (gap_start, gap_end) in all_runs_gaps_idx:
-        if gap_start == previous_gap_start:
-            if gap_end > runs_gaps_idx_end[-1]:
-                runs_gaps_idx_end[-1] = gap_end
+    def gaps_overlap(gap1, gap2):
+        return (gap1[0] < gap2[1]) and (gap2[0] < gap1[1])
+
+    def combine_gaps(gap1, gap2):
+        min_start = min(gap1, gap2, key=itemgetter(0))
+        max_end = max(gap1, gap2, key=itemgetter(1))
+        return min_start[0], max_end[1]
+
+    # this only works if the list is sorted by the start index!
+    def recursive_combine(initial_gap_list, combined_gap_list):
+        if not initial_gap_list:
+            return combined_gap_list
+
+        if gaps_overlap(combined_gap_list[-1], initial_gap_list[0]):
+            combined = combine_gaps(combined_gap_list[-1], initial_gap_list[0])
+            combined_gap_list[-1] = combined
         else:
-            runs_gaps_idx_start.append(gap_start)
-            runs_gaps_idx_end.append(gap_end)
-        previous_gap_start = gap_start
+            combined_gap_list.append(initial_gap_list[0])
+        del(initial_gap_list[0])
+        return recursive_combine(initial_gap_list, combined_gap_list)
 
-    num_pieces = len(runs_gaps_idx_start) + 1
+    def recursive_combine_start(initial_gap_list):
+        if not initial_gap_list:
+            return []
+
+        initial_gap_list_copy = initial_gap_list.copy()
+        combined_gap_list = [initial_gap_list_copy[0]]
+        del(initial_gap_list_copy[0])
+        return recursive_combine(initial_gap_list_copy, combined_gap_list)
+
+    # first sort by the start index
+    all_runs_gaps_idx.sort(key=itemgetter(0))
+    all_runs_gaps_ids_merged = recursive_combine_start(all_runs_gaps_idx)
+
+    # break the list of tuples apart into two lists
+    runs_gaps_idx_start_final = [gap[0] for gap in all_runs_gaps_ids_merged]
+    runs_gaps_idx_end_final = [gap[1] for gap in all_runs_gaps_ids_merged]
+
+    num_pieces = len(all_runs_gaps_ids_merged) + 1
     pieces_end_idx = np.full((num_pieces, ), stop_idx)
     pieces_start_idx = np.full((num_pieces,), start_idx)
-    if len(runs_gaps_idx_start) != 0:
-        pieces_end_idx[:-1] = runs[1][runs_gaps_idx_start] + start_idx
-        pieces_start_idx[1:] = runs[1][runs_gaps_idx_end] + start_idx
+    if all_runs_gaps_ids_merged:
+        pieces_end_idx[:-1] = runs[1][runs_gaps_idx_start_final] + start_idx
+        pieces_start_idx[1:] = runs[1][runs_gaps_idx_end_final] + start_idx
 
     filtered_pieces = []
     smoothed_pieces = []
