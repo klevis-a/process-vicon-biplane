@@ -17,7 +17,6 @@ log = logging.getLogger('kf_smoothing')
 
 
 def trial_plotter(trial, dt, subj_dir):
-    print('Smoothing trial {}'.format(trial.trial_name))
     log.info('Smoothing trial %s', trial.trial_name)
     trial_dir = subj_dir / trial.trial_name
     trial_dir.mkdir(parents=True, exist_ok=True)
@@ -25,7 +24,6 @@ def trial_plotter(trial, dt, subj_dir):
     with PdfPages(trial_pdf_file) as trial_pdf:
         for marker in DynamicTrial.MARKERS:
             if marker in trial.vicon_data_labeled.columns:
-                print('    Smoothing marker {}'.format(marker))
                 log.info('Smoothing marker %s', marker)
                 marker_pdf_file = trial_dir / (marker + '.pdf')
                 try:
@@ -41,8 +39,6 @@ def trial_plotter(trial, dt, subj_dir):
                     plt.close(temp_fig)
                     log.warning('Skipping marker %s for trial %s because there is insufficient data to filter',
                                 marker, trial.trial_name)
-                    print('Skipping marker {} for trial {} because there is insufficient data to filter.'
-                          .format(marker, trial.trial_name))
                     continue
                 marker_plotter = SmoothingOutputPlotter(trial.trial_name, marker, raw, filled, filtered, smoothed,
                                                         trial.vicon_endpts)
@@ -55,7 +51,6 @@ def trial_plotter(trial, dt, subj_dir):
                         fig.clf()
                         plt.close(fig)
             else:
-                print('    Marker {} missing'.format(marker))
                 log.warning('Marker %s missing', marker)
                 temp_fig = plt.figure()
                 temp_fig.suptitle(marker, fontsize=11, fontweight='bold')
