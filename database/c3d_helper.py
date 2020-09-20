@@ -14,4 +14,4 @@ class C3DHelper:
         self.frames = np.arange(self.marker_data.shape[2])
 
     def data_for_marker(self, marker_name):
-        return self.marker_data[:, self.marker_map[marker_name], :]
+        return self.marker_data[0:3, self.marker_map[marker_name], :].T
