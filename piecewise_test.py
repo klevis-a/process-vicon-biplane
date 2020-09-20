@@ -5,7 +5,7 @@ import distutils.util
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from database import create_db
-from parameters import Params
+from parameters import Params, marker_smoothing_exceptions, read_smoothing_exceptions
 import graphing.graph_utils as graph
 from graphing.plotters import SmoothingOutputPlotter
 from smoothing.kf_filtering_helpers import post_process_raw, kf_filter_marker_piecewise, combine_pieces
@@ -23,9 +23,12 @@ db, anthro = create_db(params.db_dir)
 trial_row = db.loc[params.trial_name]
 trial = trial_row.Trial
 log.info('Filtering trial %s marker %s', trial.trial_name, params.marker_name)
+all_exceptions = read_smoothing_exceptions(params.smoothing_exceptions)
+marker_exceptions = marker_smoothing_exceptions(all_exceptions, params.trial_name, params.marker_name)
 
 raw, filled = post_process_raw(trial, params.marker_name, dt=db.attrs['dt'])
-filtered_pieces, smoothed_pieces = kf_filter_marker_piecewise(trial, params.marker_name, dt=db.attrs['dt'])
+filtered_pieces, smoothed_pieces = kf_filter_marker_piecewise(trial, params.marker_name, dt=db.attrs['dt'],
+                                                              **marker_exceptions)
 filtered = combine_pieces(filtered_pieces)
 smoothed = combine_pieces(smoothed_pieces)
 

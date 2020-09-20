@@ -6,3 +6,5 @@
 parameters.json
 
 logging_config.ini
+
+smoothing_exceptions.json

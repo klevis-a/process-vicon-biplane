@@ -3,7 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from database import create_db
-from parameters import Params
+from parameters import Params, read_smoothing_exceptions, marker_smoothing_exceptions
 from database.dynamic_trial import DynamicTrial
 from graphing.plotters import SmoothingOutputPlotter
 import graphing.graph_utils as graph
@@ -16,7 +16,7 @@ fileConfig('logging_config.ini', disable_existing_loggers=False)
 log = logging.getLogger('kf_smoothing')
 
 
-def trial_plotter(trial, dt, subj_dir):
+def trial_plotter(trial, dt, subj_dir, all_smoothing_except):
     log.info('Smoothing trial %s', trial.trial_name)
     trial_dir = subj_dir / trial.trial_name
     trial_dir.mkdir(parents=True, exist_ok=True)
@@ -27,8 +27,10 @@ def trial_plotter(trial, dt, subj_dir):
                 log.info('Smoothing marker %s', marker)
                 marker_pdf_file = trial_dir / (marker + '.pdf')
                 try:
+                    marker_exceptions = marker_smoothing_exceptions(all_smoothing_except, trial.trial_name, marker)
                     raw, filled = post_process_raw(trial, marker, dt=dt)
-                    filtered_pieces, smoothed_pieces = kf_filter_marker_piecewise(trial, marker, dt=dt)
+                    filtered_pieces, smoothed_pieces = kf_filter_marker_piecewise(trial, marker, dt=dt,
+                                                                                  **marker_exceptions)
                     filtered = combine_pieces(filtered_pieces)
                     smoothed = combine_pieces(smoothed_pieces)
                 except InsufficientDataError:
@@ -64,10 +66,11 @@ params = Params.get_params(sys.argv[1])
 root_path = Path(params.output_dir)
 db, anthro = create_db(params.db_dir)
 graph.init_graphing()
+all_exceptions = read_smoothing_exceptions(params.smoothing_exceptions)
 
 # create plots
 for subject_name, subject_df in db.groupby('Subject'):
     log.info('Smoothing subject %s', subject_name)
     subject_dir = (root_path / subject_name)
     subject_dir.mkdir(parents=True, exist_ok=True)
-    subject_df['Trial'].apply(trial_plotter, args=(db.attrs['dt'], subject_dir))
+    subject_df['Trial'].apply(trial_plotter, args=(db.attrs['dt'], subject_dir, all_exceptions))
