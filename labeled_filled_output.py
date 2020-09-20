@@ -14,7 +14,7 @@ fileConfig('logging_config.ini', disable_existing_loggers=False)
 log = logging.getLogger('kf_smoothing')
 
 
-def trial_plotter(trial, dt, subj_dir):
+def trial_plotter(trial, subj_dir):
     log.info('Outputting trial %s', trial.trial_name)
     trial_pdf_file = subj_dir / (trial.trial_name + '.pdf')
     with PdfPages(trial_pdf_file) as trial_pdf:
@@ -47,4 +47,4 @@ for subject_name, subject_df in db.groupby('Subject'):
     log.info('Outputting subject %s', subject_name)
     subject_dir = (root_path / subject_name)
     subject_dir.mkdir(parents=True, exist_ok=True)
-    subject_df['Trial'].apply(trial_plotter, args=(db.attrs['dt'], subject_dir))
+    subject_df['Trial'].apply(trial_plotter, args=subject_dir)
