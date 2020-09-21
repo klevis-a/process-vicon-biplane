@@ -1,6 +1,7 @@
 from misc.json_utils import json2obj
 import json
 
+
 class Params:
     params = None
 
