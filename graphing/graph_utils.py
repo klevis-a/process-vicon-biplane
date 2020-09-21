@@ -155,6 +155,10 @@ def add_vicon_start_stop(axs, start_i, end_i):
         for ax in axs:
             add_vicon_start_stop(ax, start_i, end_i)
     elif isinstance(axs, axes.Axes):
+        if start_i <= axs.get_xlim()[0]:
+            axs.set_xlim(left=start_i-5)
+        if end_i >= axs.get_xlim()[1]:
+            axs.set_xlim(right=end_i+5)
         axs.axvline(start_i)
         axs.axvline(end_i)
     else:
