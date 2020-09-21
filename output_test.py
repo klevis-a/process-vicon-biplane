@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+import numpy as np
+import distutils.util
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from database import create_db
@@ -28,9 +30,25 @@ def trial_plotter(trial, dt, subj_dir, all_smoothing_except):
                 marker_pdf_file = trial_dir / (marker + '.pdf')
                 try:
                     marker_exceptions = marker_smoothing_exceptions(all_smoothing_except, trial.trial_name, marker)
+                    should_use = bool(distutils.util.strtobool(marker_exceptions.get('use_marker', 'True')))
+                    if not should_use:
+                        temp_fig = plt.figure()
+                        temp_fig.suptitle(marker + ' SHOULD NOT USE', fontsize=11, fontweight='bold')
+                        trial_pdf.savefig(temp_fig)
+                        temp_fig.clf()
+                        plt.close(temp_fig)
+                        log.warning('Skipping marker %s for trial %s because it is marked as DO NOT USE',
+                                    marker, trial.trial_name)
+                        continue
+                    smoothing_params = marker_exceptions.get('smoothing_params', {})
+                    frame_ignores = np.asarray(marker_exceptions.get('frame_ignores', []))
+                    # ignore frames
+                    if frame_ignores.size > 0:
+                        trial.marker_data_labeled(marker)[frame_ignores - 1, :] = np.nan
+
                     raw, filled = post_process_raw(trial, marker, dt=dt)
                     filtered_pieces, smoothed_pieces = kf_filter_marker_piecewise(trial, marker, dt=dt,
-                                                                                  **marker_exceptions)
+                                                                                  **smoothing_params)
                     filtered = combine_pieces(filtered_pieces)
                     smoothed = combine_pieces(smoothed_pieces)
                 except InsufficientDataError:
