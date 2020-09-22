@@ -4,6 +4,8 @@ import numpy as np
 import distutils.util
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import multiprocessing as mp
+from functools import partial
 from database import create_db
 from parameters import Params, read_smoothing_exceptions, marker_smoothing_exceptions
 from database.dynamic_trial import DynamicTrial
@@ -92,5 +94,7 @@ if __name__ == '__main__':
         log.info('Smoothing subject %s', subject_name)
         subject_dir = (root_path / subject_name)
         subject_dir.mkdir(parents=True, exist_ok=True)
-        for t in subject_df['Trial']:
-            trial_plotter(t, db.attrs['dt'], subject_dir, all_exceptions)
+        subject_trial_plotter = partial(trial_plotter, dt=db.attrs['dt'], subj_dir=subject_dir,
+                                        all_smoothing_except=all_exceptions)
+        with mp.Pool(mp.cpu_count()) as pool:
+            pool.map(subject_trial_plotter, subject_df['Trial'])
