@@ -1,4 +1,7 @@
 if __name__ == '__main__':
+    if __package__ is None:
+        print('Use -m option to run this library module as a script.')
+
     import os
     from pathlib import Path
     import psutil

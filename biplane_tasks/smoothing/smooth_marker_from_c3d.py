@@ -12,6 +12,9 @@ def new_c3d_path(row, labeled_base_path, filled_base_path):
 
 
 if __name__ == '__main__':
+    if __package__ is None:
+        print('Use -m option to run this library module as a script.')
+
     from pathlib import Path
     import sys
     import distutils.util

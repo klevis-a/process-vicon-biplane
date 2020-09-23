@@ -30,6 +30,9 @@ def trial_plotter(trial, subj_dir):
 
 
 if __name__ == '__main__':
+    if __package__ is None:
+        print('Use -m option to run this library module as a script.')
+
     import sys
     from pathlib import Path
     from biplane_kine.database import create_db
