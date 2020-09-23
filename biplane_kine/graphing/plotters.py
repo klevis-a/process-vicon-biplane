@@ -1,6 +1,7 @@
 import numpy as np
-from graphing.graph_utils import marker_graph_init, marker_graph_add, add_vicon_start_stop, make_interactive, \
-    marker_diff_his_init, marker_diff_his_add, marker_graph_add_cov, cov_trend_graph_init, cov_trend_graph_add, MplStyle
+from biplane_kine.graphing.graph_utils \
+    import (marker_graph_init, marker_graph_add, add_vicon_start_stop, make_interactive, marker_diff_his_init,
+            marker_diff_his_add, marker_graph_add_cov, cov_trend_graph_init, cov_trend_graph_add, MplStyle)
 
 
 class LabeledMarkerPloter:

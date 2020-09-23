@@ -3,8 +3,6 @@
 
 **/__pycache__
 
-parameters.json
+config/
 
-logging_config.ini
-
-smoothing_exceptions.json
+requirements.txt

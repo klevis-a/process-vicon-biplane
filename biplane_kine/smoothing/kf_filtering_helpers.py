@@ -3,10 +3,10 @@ import itertools
 from operator import itemgetter
 from scipy.signal import butter, sosfiltfilt
 from collections import namedtuple
-from smoothing.kalman_filtering import LinearKF1DSimdKalman, LinearKF
-from misc.np_utils import find_runs
+from biplane_kine.smoothing.kalman_filtering import LinearKF1DSimdKalman, LinearKF
+from biplane_kine.misc.np_utils import find_runs
 import logging
-log = logging.getLogger('kf_smoothing')
+log = logging.getLogger(__name__)
 
 
 FilterStep = namedtuple('FilterStep', ['endpts', 'indices', 'means', 'covars', 'corrs'])

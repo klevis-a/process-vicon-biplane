@@ -1,23 +1,15 @@
-import sys
-from pathlib import Path
 import numpy as np
 import distutils.util
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-import multiprocessing as mp
-from functools import partial
-from database import create_db
-from parameters import Params, read_smoothing_exceptions, marker_smoothing_exceptions
-from database.dynamic_trial import DynamicTrial
-from graphing.plotters import SmoothingOutputPlotter
-import graphing.graph_utils as graph
-from smoothing.kf_filtering_helpers import post_process_raw, kf_filter_marker_piecewise, combine_pieces, \
-    InsufficientDataError
+from biplane_kine.database.dynamic_trial import DynamicTrial
+from biplane_kine.graphing.plotters import SmoothingOutputPlotter
+from biplane_kine.smoothing.kf_filtering_helpers import (post_process_raw, kf_filter_marker_piecewise, combine_pieces,
+                                                         InsufficientDataError)
 import logging
-from logging.config import fileConfig
+from ..parameters import marker_smoothing_exceptions
 
-fileConfig('logging_config.ini', disable_existing_loggers=False)
-log = logging.getLogger('kf_smoothing')
+log = logging.getLogger(__name__)
 
 
 def trial_plotter(trial, dt, subj_dir, all_smoothing_except):
@@ -82,11 +74,26 @@ def trial_plotter(trial, dt, subj_dir, all_smoothing_except):
 
 
 if __name__ == '__main__':
+    import sys
+    from pathlib import Path
+    from biplane_kine.database import create_db
+    from biplane_kine.misc.json_utils import Params
+    from biplane_kine.graphing.graph_utils import init_graphing
+    from ..parameters import read_smoothing_exceptions
+    from logging.config import fileConfig
+
+    # initialize
+    config_dir = Path(sys.argv[1])
+    params = Params.get_params(config_dir / 'parameters.json')
+
+    # logging
+    fileConfig(config_dir / 'logging.ini', disable_existing_loggers=False)
+    log = logging.getLogger(params.logger_name)
+
     # ready db
-    params = Params.get_params(sys.argv[1])
     root_path = Path(params.output_dir)
     db, anthro = create_db(params.db_dir)
-    graph.init_graphing()
+    init_graphing()
     all_exceptions = read_smoothing_exceptions(params.smoothing_exceptions)
 
     # create plots
@@ -94,7 +101,5 @@ if __name__ == '__main__':
         log.info('Smoothing subject %s', subject_name)
         subject_dir = (root_path / subject_name)
         subject_dir.mkdir(parents=True, exist_ok=True)
-        subject_trial_plotter = partial(trial_plotter, dt=db.attrs['dt'], subj_dir=subject_dir,
-                                        all_smoothing_except=all_exceptions)
-        with mp.Pool(mp.cpu_count()) as pool:
-            pool.map(subject_trial_plotter, subject_df['Trial'])
+        for t in subject_df['Trial']:
+            trial_plotter(t, db.attrs['dt'], subject_dir, all_exceptions)
