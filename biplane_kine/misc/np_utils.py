@@ -2,6 +2,9 @@ import numpy as np
 
 
 def find_runs(x):
+    # written by alimanfoo and retrieved from:
+    # https://gist.github.com/alimanfoo/c5977e87111abe8127453b21204c1065
+
     """Find runs of consecutive items in an array."""
 
     # ensure array
