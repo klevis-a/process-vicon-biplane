@@ -53,6 +53,7 @@ if __name__ == '__main__':
     from pathlib import Path
     import matplotlib.pyplot as plt
     from biplane_kine.database import create_db
+    from biplane_kine.database.dynamic_subject import DynamicSubject
     from biplane_tasks.parameters import read_smoothing_exceptions
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.graph_utils import init_graphing
@@ -69,7 +70,7 @@ if __name__ == '__main__':
 
     # ready db
     root_path = Path(params.output_dir)
-    db, anthro = create_db(params.db_dir)
+    db = create_db(params.db_dir, DynamicSubject)
 
     # filter and plot
     trial_row = db.loc[params.trial_name]

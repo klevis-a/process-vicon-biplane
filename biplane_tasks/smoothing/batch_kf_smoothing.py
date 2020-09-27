@@ -2,7 +2,7 @@ import numpy as np
 import distutils.util
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from biplane_kine.database.dynamic_trial import DynamicTrial
+from biplane_kine.database.db_common import MARKERS
 from biplane_kine.graphing.plotters import SmoothingOutputPlotter
 from biplane_kine.smoothing.kf_filtering_helpers import (post_process_raw, kf_filter_marker_piecewise, combine_pieces,
                                                          InsufficientDataError)
@@ -18,7 +18,7 @@ def trial_plotter(trial, dt, subj_dir, all_smoothing_except):
     trial_dir.mkdir(parents=True, exist_ok=True)
     trial_pdf_file = subj_dir / (trial.trial_name + '.pdf')
     with PdfPages(trial_pdf_file) as trial_pdf:
-        for marker in DynamicTrial.MARKERS:
+        for marker in MARKERS:
             if marker in trial.vicon_data_labeled.columns:
                 log.info('Smoothing marker %s', marker)
                 marker_pdf_file = trial_dir / (marker + '.pdf')
@@ -80,6 +80,7 @@ if __name__ == '__main__':
     import sys
     from pathlib import Path
     from biplane_kine.database import create_db
+    from biplane_kine.database.dynamic_subject import DynamicSubject
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.graph_utils import init_graphing
     from ..parameters import read_smoothing_exceptions
@@ -95,7 +96,7 @@ if __name__ == '__main__':
 
     # ready db
     root_path = Path(params.output_dir)
-    db, anthro = create_db(params.db_dir)
+    db = create_db(params.db_dir, DynamicSubject)
     init_graphing()
     all_exceptions = read_smoothing_exceptions(params.smoothing_exceptions)
 

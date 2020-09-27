@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from biplane_kine.database.dynamic_trial import DynamicTrial
+from biplane_kine.database.db_common import MARKERS
 from biplane_kine.graphing.plotters import LabeledFilledMarkerPlotter
 import logging
 
@@ -11,7 +11,7 @@ def trial_plotter(trial, subj_dir):
     log.info('Outputting trial %s', trial.trial_name)
     trial_pdf_file = subj_dir / (trial.trial_name + '.pdf')
     with PdfPages(trial_pdf_file) as trial_pdf:
-        for marker in DynamicTrial.MARKERS:
+        for marker in MARKERS:
             if marker in trial.vicon_data_labeled.columns:
                 log.info('Outputting marker %s', marker)
                 marker_plotter = LabeledFilledMarkerPlotter(trial, marker)
@@ -36,6 +36,7 @@ if __name__ == '__main__':
     import sys
     from pathlib import Path
     from biplane_kine.database import create_db
+    from biplane_kine.database.dynamic_subject import DynamicSubject
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.graph_utils import init_graphing
     from logging.config import fileConfig
@@ -50,7 +51,7 @@ if __name__ == '__main__':
 
     # ready db
     root_path = Path(params.output_dir)
-    db, anthro = create_db(params.db_dir)
+    db = create_db(params.db_dir, DynamicSubject)
     init_graphing()
 
     # create plots

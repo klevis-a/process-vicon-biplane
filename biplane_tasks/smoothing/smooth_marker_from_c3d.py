@@ -23,6 +23,7 @@ if __name__ == '__main__':
     from biplane_tasks.parameters import read_smoothing_exceptions
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.graph_utils import init_graphing
+    from biplane_kine.database.dynamic_subject import DynamicSubject
     from biplane_kine.database.dynamic_trial import DynamicTrial
     from .smooth_marker import marker_plotter, figs_to_pdf
     import logging
@@ -38,7 +39,7 @@ if __name__ == '__main__':
 
     # ready db
     root_path = Path(params.output_dir)
-    db, anthro = create_db(params.db_dir)
+    db = create_db(params.db_dir, DynamicSubject)
 
     # modify DynamicTrial so it uses c3d
     delattr(DynamicTrial, 'marker_data_labeled_df')
