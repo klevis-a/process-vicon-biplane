@@ -1,7 +1,6 @@
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from ezc3d import c3d
 from .c3d_helper import C3DHelper
 from .db_common import ViconEndpts, TrialDescriptor
 
@@ -58,13 +57,13 @@ class DynamicTrial(ViconEndpts, TrialDescriptor):
     @property
     def c3d_helper_labeled(self):
         if self._c3d_helper_labeled is None:
-            self._c3d_helper_labeled = C3DHelper(c3d(str(self.c3d_file_labeled)))
+            self._c3d_helper_labeled = C3DHelper(str(self.c3d_file_labeled))
         return self._c3d_helper_labeled
 
     @property
     def c3d_helper_filled(self):
         if self._c3d_helper_filled is None:
-            self._c3d_helper_filled = C3DHelper(c3d(str(self.c3d_file_filled)))
+            self._c3d_helper_filled = C3DHelper(str(self.c3d_file_filled))
         return self._c3d_helper_filled
 
     @property

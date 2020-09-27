@@ -55,7 +55,7 @@ if __name__ == '__main__':
     init_graphing()
 
     # create plots
-    for subject_name, subject_df in db.groupby('Subject'):
+    for subject_name, subject_df in db.groupby('Subject_Name'):
         log.info('Outputting subject %s', subject_name)
         subject_dir = (root_path / subject_name)
         subject_dir.mkdir(parents=True, exist_ok=True)

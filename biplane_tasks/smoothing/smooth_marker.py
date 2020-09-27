@@ -84,7 +84,7 @@ if __name__ == '__main__':
     plt.show()
 
     if bool(distutils.util.strtobool(params.print_to_file)):
-        subj_dir = Path(params.output_dir) / trial_row.Subject
+        subj_dir = Path(params.output_dir) / trial_row.Subject_Name
         t_dir = subj_dir / trial_row.Trial_Name
         t_dir.mkdir(parents=True, exist_ok=True)
         figs_to_pdf(figs, t_dir, params.marker_name)

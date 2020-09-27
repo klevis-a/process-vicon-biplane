@@ -6,6 +6,14 @@ MARKERS = ['T10', 'T5', 'C7', 'STRN', 'CLAV', 'LSHO', 'LCLAV', 'RCLAV', 'RSH0', 
            'RUPAB', 'RUPAC', 'RUPAD', 'RELB', 'RFRM', 'RWRA', 'RWRB', 'RHNDA', 'RHNDB', 'RHNDC', 'RHNDD']
 
 
+def trial_descriptor_df(subject_name, trials):
+    return pd.DataFrame({'Subject_Name': pd.Series([subject_name] * len(trials), dtype=pd.StringDtype()),
+                         'Trial_Name': pd.Series([trial.trial_name for trial in trials], dtype=pd.StringDtype()),
+                         'Subject_Short': pd.Series([trial.subject_short for trial in trials], dtype=pd.StringDtype()),
+                         'Activity': pd.Categorical([trial.activity for trial in trials], categories=ACTIVITY_TYPES),
+                         'Trial_Number': pd.Series([trial.trial_number for trial in trials], dtype=np.int)})
+
+
 class ViconEndpts:
     def __init__(self, endpts_file, **kwargs):
         super().__init__(**kwargs)
@@ -45,30 +53,14 @@ class SubjectDescriptor:
     def __init__(self, subject_dir_path, **kwargs):
         super().__init__(**kwargs)
         # subject identifier
-        self.subject = subject_dir_path.stem
-
-
-class SubjectDf:
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._df = None
-
-    @property
-    def subject_df(self):
-        if self._df is None:
-            self._df = pd.DataFrame({'Subject': self.subject,
-                                     'Trial_Name': [trial.trial_name for trial in self.trials],
-                                     'Subject_Short': [trial.subject_short for trial in self.trials],
-                                     'Activity': pd.Categorical([trial.activity for trial in self.trials],
-                                                                categories=ACTIVITY_TYPES),
-                                     'Trial_number': [trial.trial_number for trial in self.trials],
-                                     'Trial': self.trials})
-        return self._df
+        self.subject_name = subject_dir_path.stem
 
 
 class ViconCSTransform:
-    def __init__(self, **kwargs):
+    def __init__(self, f_t_v_file, **kwargs):
         super().__init__(**kwargs)
+        self.F_T_V_file = f_t_v_file
+        assert(self.F_T_V_file.is_file())
         self._F_T_V_data = None
 
     @property

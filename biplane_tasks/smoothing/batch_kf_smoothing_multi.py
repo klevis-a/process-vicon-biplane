@@ -24,7 +24,7 @@ if __name__ == '__main__':
     all_exceptions = read_smoothing_exceptions(params.smoothing_exceptions)
 
     # create plots
-    for subject_name, subject_df in db.groupby('Subject'):
+    for subject_name, subject_df in db.groupby('Subject_Name'):
         print('Smoothing subject {}'.format(subject_name))
         subject_dir = (root_path / subject_name)
         subject_dir.mkdir(parents=True, exist_ok=True)
