@@ -1,16 +1,3 @@
-def marker_data_labeled(self, marker_name):
-    return self.c3d_helper_labeled.data_for_marker(marker_name)
-
-
-def marker_data_filled(self, marker_name):
-    return self.c3d_helper_filled.data_for_marker(marker_name)
-
-
-def new_c3d_path(row, labeled_base_path, filled_base_path):
-    row['Trial'].c3d_file_labeled = labeled_base_path / row['Subject'] / (row['Trial_Name'] + '.c3d')
-    row['Trial'].c3d_file_filled = filled_base_path / row['Subject'] / (row['Trial_Name'] + '.c3d')
-
-
 if __name__ == '__main__':
     if __package__ is None:
         print('Use -m option to run this library module as a script.')
@@ -23,9 +10,10 @@ if __name__ == '__main__':
     from biplane_tasks.parameters import read_smoothing_exceptions
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.graph_utils import init_graphing
-    from biplane_kine.database.dynamic_subject import DynamicSubject
-    from biplane_kine.database.dynamic_trial import DynamicTrial
+    from biplane_kine.database.c3d_helper import C3DSubjectEndpts
+    from biplane_kine.misc.python_utils import partialclass
     from .smooth_marker import marker_plotter, figs_to_pdf
+
     import logging
     from logging.config import fileConfig
 
@@ -39,14 +27,8 @@ if __name__ == '__main__':
 
     # ready db
     root_path = Path(params.output_dir)
-    db = create_db(params.db_dir, DynamicSubject)
-
-    # modify DynamicTrial so it uses c3d
-    delattr(DynamicTrial, 'marker_data_labeled_df')
-    delattr(DynamicTrial, 'marker_data_filled_df')
-    DynamicTrial.marker_data_labeled = marker_data_labeled
-    DynamicTrial.marker_data_filled = marker_data_filled
-    db.apply(new_c3d_path, axis=1, args=(Path(params.labeled_c3d_dir), Path(params.filled_c3d_dir)))
+    db = create_db(params.db_dir, partialclass(C3DSubjectEndpts, labeled_base_dir=params.labeled_c3d_dir,
+                                               filled_base_dir=params.filled_c3d_dir))
 
     # filter and plot
     trial_row = db.loc[params.trial_name]
