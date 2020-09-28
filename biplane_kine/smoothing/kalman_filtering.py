@@ -19,7 +19,7 @@ class LinearKF:
         # here we iterate over each variance/covariance pos(0), vel(1), acc(2), pos_vel(3), pos_acc(4), vel_acc(5)
         covariances = []
         for cov_idx in LinearKF._CovIndices:
-            covariance = np.vstack([cov[:, cov_idx[0], cov_idx[1]] for cov in covs]).T
+            covariance = np.stack([cov[:, cov_idx[0], cov_idx[1]] for cov in covs], axis=-1)
             covariances.append(covariance)
         return covariances
 
@@ -42,7 +42,7 @@ class LinearKF:
         # here we iterate over each derivative (0, 1, 2)
         output = []
         for i in range(3):
-            mean_data = np.vstack([mean[:, i] for mean in means]).T
+            mean_data = np.stack([mean[:, i] for mean in means], axis=-1)
             output.append(mean_data)
         return output
 
