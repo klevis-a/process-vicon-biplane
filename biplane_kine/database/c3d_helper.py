@@ -49,6 +49,13 @@ class C3DTrial(TrialDescriptor):
             self._filled_c3d = C3DHelper(str(self.filled_c3d_path))
         return self._filled_c3d
 
+    # creating the two methods below to maintain compatibility (for now) for smooth_marker_from_c3d
+    def marker_data_labeled(self, marker_name):
+        return self.labeled[marker_name][:, :3]
+
+    def marker_data_filled(self, marker_name):
+        return self.filled[marker_name][:, :3]
+
 
 class C3DTrialEndpts(C3DTrial, ViconEndpts):
     def __init__(self, labeled_c3d_path, filled_c3d_path, endpts_file):

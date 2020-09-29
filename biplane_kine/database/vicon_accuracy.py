@@ -8,7 +8,7 @@ ViconAccuracyMarkerData = namedtuple('ViconAccuracyMarkerData', ['indices', 'fra
 VICON_ACCURACY_FILE_HEADERS = {'frame': np.int32, 'x': np.float64, 'y': np.float64, 'z': np.float64}
 
 
-class ViconAccuracyTrial(TrialDescriptor):
+class BiplaneMarkerTrial(TrialDescriptor):
     def __init__(self, trial_dir, subject, **kwargs):
         self.trial_dir_path = trial_dir if isinstance(trial_dir, Path) else Path(trial_dir)
         super().__init__(trial_dir_path=self.trial_dir_path, **kwargs)
@@ -16,7 +16,7 @@ class ViconAccuracyTrial(TrialDescriptor):
         self.subject = subject
         self._marker_files = {file.stem: file for file in self.trial_dir_path.iterdir() if
                               (file.stem in MARKERS)}
-        self._marker_data = {k: ViconAccuracyTrial.process_marker_file(v) for k, v in self._marker_files.items()}
+        self._marker_data = {k: BiplaneMarkerTrial.process_marker_file(v) for k, v in self._marker_files.items()}
         self.markers = self._marker_files.keys()
 
     @staticmethod
@@ -25,7 +25,7 @@ class ViconAccuracyTrial(TrialDescriptor):
 
     @staticmethod
     def process_marker_file(file_path):
-        marker_data = ViconAccuracyTrial.read_marker_file(file_path)
+        marker_data = BiplaneMarkerTrial.read_marker_file(file_path)
         frames = marker_data.index.to_numpy()
         return ViconAccuracyMarkerData(frames - 1, frames, marker_data.to_numpy())
 
@@ -36,18 +36,18 @@ class ViconAccuracyTrial(TrialDescriptor):
         return (i for i in self._marker_data.items())
 
 
-class ViconAccuracyTrialEndpts(ViconAccuracyTrial, ViconEndpts):
+class BiplaneMarkerTrialEndpts(BiplaneMarkerTrial, ViconEndpts):
     def __init__(self, trial_dir, subject):
         trial_dir_path = trial_dir if isinstance(trial_dir, Path) else Path(trial_dir)
         super().__init__(trial_dir=trial_dir_path, subject=subject, endpts_file=trial_dir_path / 'vicon_endpts.csv')
 
 
-class ViconAccuracySubjectEndpts(SubjectDescriptor, ViconCSTransform):
+class BiplaneMarkerSubjectEndpts(SubjectDescriptor, ViconCSTransform):
     def __init__(self, subj_dir, **kwargs):
         self.subject_dir_path = subj_dir if isinstance(subj_dir, Path) else Path(subj_dir)
         super().__init__(subject_dir_path=self.subject_dir_path, f_t_v_file=self.subject_dir_path / 'F_T_V.csv',
                          **kwargs)
-        self.trials = [ViconAccuracyTrialEndpts(folder, self) for folder in self.subject_dir_path.iterdir()
+        self.trials = [BiplaneMarkerTrialEndpts(folder, self) for folder in self.subject_dir_path.iterdir()
                        if folder.is_dir()]
         # used for dataframe
         self._df = None
@@ -56,5 +56,5 @@ class ViconAccuracySubjectEndpts(SubjectDescriptor, ViconCSTransform):
     def subject_df(self):
         if self._df is None:
             self._df = trial_descriptor_df(self.subject_name, self.trials)
-            self._df['Accuracy_Trial'] = pd.Series(self.trials, dtype=object)
+            self._df['Biplane_Marker_Trial'] = pd.Series(self.trials, dtype=object)
         return self._df

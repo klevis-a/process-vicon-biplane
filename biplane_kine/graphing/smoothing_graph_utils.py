@@ -1,32 +1,19 @@
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-import mplcursors
 import numpy as np
 from collections.abc import Iterable
-from matplotlib import rcParams
 from matplotlib import axes
 from pythonGraphingLibrary import plotUtils
+from biplane_kine.graphing.common_graph_utils import MplStyle
 
 
-class MplStyle:
-    def __init__(self, color, ls='-', lw=2, marker='', ms=4):
-        self.color = color
-        self.ls = ls
-        self.lw = lw
-        self.marker = marker
-        self.ms = ms
+def marker_graph_title(fig, title):
+    plt.tight_layout(pad=1.0, w_pad=1.0, h_pad=0)
+    fig.suptitle(title, fontsize=11, fontweight='bold')
+    plt.subplots_adjust(top=0.94)
 
 
-def init_graphing():
-    rcParams['font.family'] = 'sans-serif'
-    rcParams['font.sans-serif'] = ['Arial']
-    matplotlib.use('Qt5Agg')
-
-
-def marker_graph_init(marker_data, title, y_label, fig_num, x_data, style=MplStyle('blue')):
-    fig = plt.figure(num=fig_num)
-    ax = fig.subplots(3, 1, sharex=True)
+def marker_graph_init(ax, marker_data, y_label, x_data, style=MplStyle('blue')):
     lines = []
     for n in range(3):
         current_line, = ax[n].plot(x_data, marker_data[:, n], linestyle=style.ls, linewidth=style.lw,
@@ -42,11 +29,7 @@ def marker_graph_init(marker_data, title, y_label, fig_num, x_data, style=MplSty
             plotUtils.update_xlabel(ax[n], 'Frame Number', font_size=10)
         elif n == 1:
             plotUtils.update_ylabel(ax[n], y_label, font_size=10)
-
-    plt.tight_layout(pad=1.0, w_pad=1.0, h_pad=0)
-    fig.suptitle(title, fontsize=11, fontweight='bold')
-    plt.subplots_adjust(top=0.94)
-    return fig, ax, lines
+    return lines
 
 
 def marker_graph_add(ax, marker_data, x_data, style=MplStyle('green')):
@@ -67,9 +50,7 @@ def marker_graph_add_cov(ax, marker_data, cov_data, x_data, color):
     return polys
 
 
-def marker_diff_his_init(filtered_diff, title, x_label, fig_num, color):
-    fig = plt.figure(num=fig_num)
-    ax = fig.subplots(1, 3, sharey=True)
+def marker_diff_his_init(ax, filtered_diff, x_label, color):
     polygons_filtered = []
     for n in range(3):
         current_filtered_diff = filtered_diff[:, n]
@@ -85,10 +66,7 @@ def marker_diff_his_init(filtered_diff, title, x_label, fig_num, color):
         elif n == 0:
             plotUtils.update_ylabel(ax[n], 'Instances', font_size=10)
 
-    plt.tight_layout(pad=1.0, w_pad=1.0, h_pad=0)
-    fig.suptitle(title, fontsize=11, fontweight='bold')
-    plt.subplots_adjust(top=0.94)
-    return fig, ax, polygons_filtered
+    return polygons_filtered
 
 
 def marker_diff_his_add(axs, smoothed_diff, color):
@@ -101,9 +79,7 @@ def marker_diff_his_add(axs, smoothed_diff, color):
     return polygons_smoothed
 
 
-def cov_trend_graph_init(variance_data, x_data, title, y_labels, fig_num, process_func, style):
-    fig = plt.figure(num=fig_num)
-    ax = fig.subplots(3, 3, sharex='all', sharey='row')
+def cov_trend_graph_init(ax, variance_data, x_data, y_labels, process_func, style):
     lines = []
     # iterate over pos, vel, acc
     for i in range(3):
@@ -125,11 +101,7 @@ def cov_trend_graph_init(variance_data, x_data, title, y_labels, fig_num, proces
             if j == 0:
                 plotUtils.update_ylabel(ax[i, j], y_labels[i], font_size=10)
         lines.append(dim_lines)
-
-    plt.tight_layout(pad=1.0, w_pad=1.0, h_pad=0)
-    fig.suptitle(title, fontsize=11, fontweight='bold')
-    plt.subplots_adjust(top=0.94)
-    return fig, ax, lines
+    return lines
 
 
 def cov_trend_graph_add(ax, variance_data, x_data, process_func, style):
@@ -144,10 +116,6 @@ def cov_trend_graph_add(ax, variance_data, x_data, process_func, style):
             dim_lines.append(line)
         lines.append(dim_lines)
     return lines
-
-
-def make_interactive(multiple=True):
-    mplcursors.cursor(multiple=multiple)
 
 
 def add_vicon_start_stop(axs, start_i, end_i):

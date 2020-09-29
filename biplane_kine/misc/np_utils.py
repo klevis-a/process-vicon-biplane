@@ -1,10 +1,9 @@
 import numpy as np
 
 
+# written by alimanfoo and retrieved from:
+# https://gist.github.com/alimanfoo/c5977e87111abe8127453b21204c1065
 def find_runs(x):
-    # written by alimanfoo and retrieved from:
-    # https://gist.github.com/alimanfoo/c5977e87111abe8127453b21204c1065
-
     """Find runs of consecutive items in an array."""
 
     # ensure array
@@ -31,7 +30,3 @@ def find_runs(x):
         run_lengths = np.diff(np.append(run_starts, n))
 
         return run_values, run_starts, run_lengths
-
-
-def extended_dot(a, b, sum_axis=0):
-    return np.sum(np.multiply(a, b), axis=sum_axis)

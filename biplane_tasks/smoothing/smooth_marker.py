@@ -3,13 +3,12 @@ import numpy as np
 import distutils.util
 from matplotlib.backends.backend_pdf import PdfPages
 from biplane_tasks.parameters import marker_smoothing_exceptions
-from biplane_kine.graphing.plotters import SmoothingOutputPlotter
 from biplane_kine.smoothing.kf_filtering_helpers import post_process_raw, kf_filter_marker_piecewise, combine_pieces
 import logging
 log = logging.getLogger(__name__)
 
 
-def marker_plotter(trial, marker_name, all_except, dt):
+def marker_plotter(trial, marker_name, all_except, dt, plotter_cls):
     marker_exceptions = marker_smoothing_exceptions(all_except, trial.trial_name, marker_name)
     should_use = bool(distutils.util.strtobool(marker_exceptions.get('use_marker', 'True')))
     if not should_use:
@@ -27,7 +26,7 @@ def marker_plotter(trial, marker_name, all_except, dt):
     filtered = combine_pieces(filtered_pieces)
     smoothed = combine_pieces(smoothed_pieces)
 
-    plotter = SmoothingOutputPlotter(trial.trial_name, marker_name, raw, filled, filtered, smoothed, trial.vicon_endpts)
+    plotter = plotter_cls(trial.trial_name, marker_name, raw, filled, filtered, smoothed, trial.vicon_endpts)
 
     return plotter.plot()
 
@@ -54,10 +53,10 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from biplane_kine.database import create_db
     from biplane_kine.database.dynamic_subject import DynamicSubject
+    from biplane_kine.graphing.smoothing_plotters import SmoothingOutputPlotter
     from biplane_tasks.parameters import read_smoothing_exceptions
     from biplane_kine.misc.json_utils import Params
-    from biplane_kine.graphing.graph_utils import init_graphing
-
+    from biplane_kine.graphing.common_graph_utils import init_graphing
     from logging.config import fileConfig
 
     # initialize
@@ -78,7 +77,7 @@ if __name__ == '__main__':
     log.info('Filtering trial %s marker %s', t.trial_name, params.marker_name)
     all_exceptions = read_smoothing_exceptions(params.smoothing_exceptions)
     init_graphing()
-    figs = marker_plotter(t, params.marker_name, all_exceptions, db.attrs['dt'])
+    figs = marker_plotter(t, params.marker_name, all_exceptions, db.attrs['dt'], SmoothingOutputPlotter)
     if figs is None:
         sys.exit(1)
     plt.show()

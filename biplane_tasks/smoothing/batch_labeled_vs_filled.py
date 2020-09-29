@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from biplane_kine.database.db_common import MARKERS
-from biplane_kine.graphing.plotters import LabeledFilledMarkerPlotter
+from biplane_kine.graphing.smoothing_plotters import LabeledFilledMarkerPlotter
 import logging
 
 log = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     from biplane_kine.database import create_db
     from biplane_kine.database.dynamic_subject import DynamicSubject
     from biplane_kine.misc.json_utils import Params
-    from biplane_kine.graphing.graph_utils import init_graphing
+    from biplane_kine.graphing.common_graph_utils import init_graphing
     from logging.config import fileConfig
 
     # initialize

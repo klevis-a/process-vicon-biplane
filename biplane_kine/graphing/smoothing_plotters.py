@@ -1,7 +1,9 @@
 import numpy as np
-from biplane_kine.graphing.graph_utils \
-    import (marker_graph_init, marker_graph_add, add_vicon_start_stop, make_interactive, marker_diff_his_init,
-            marker_diff_his_add, marker_graph_add_cov, cov_trend_graph_init, cov_trend_graph_add, MplStyle)
+import matplotlib.pyplot as plt
+from biplane_kine.graphing.smoothing_graph_utils \
+    import (marker_graph_init, marker_graph_add, marker_graph_title, add_vicon_start_stop, marker_diff_his_init,
+            marker_diff_his_add, marker_graph_add_cov, cov_trend_graph_init, cov_trend_graph_add)
+from biplane_kine.graphing.common_graph_utils import MplStyle, make_interactive
 
 
 class LabeledMarkerPloter:
@@ -12,9 +14,11 @@ class LabeledMarkerPloter:
         self.frame_nums = np.arange(self.marker_pos_labeled.shape[0]) + 1
 
     def plot(self):
-        fig, ax, _ = marker_graph_init(self.marker_pos_labeled, self.trial.trial_name + ' ' + self.marker_name,
-                                       'Pos (mm)', fig_num=0, x_data=self.frame_nums)
+        fig = plt.figure(num=0)
+        ax = fig.subplots(3, 1, sharex=True)
+        marker_graph_init(ax, self.marker_pos_labeled, 'Pos (mm)', x_data=self.frame_nums)
         add_vicon_start_stop(ax, self.trial.vicon_endpts[0] + 1, self.trial.vicon_endpts[1])
+        marker_graph_title(fig, self.trial.trial_name + ' ' + self.marker_name)
         make_interactive()
         return fig
 
@@ -25,10 +29,12 @@ class LabeledFilledMarkerPlotter(LabeledMarkerPloter):
         self.marker_pos_filled = self.trial.marker_data_filled(marker_name)
 
     def plot(self):
-        fig, ax, _ = marker_graph_init(self.marker_pos_filled, self.trial.trial_name + ' ' + self.marker_name,
-                                       'Pos (mm)', fig_num=0, x_data=self.frame_nums, style=MplStyle('red'))
+        fig = plt.figure(num=0)
+        ax = fig.subplots(3, 1, sharex=True)
+        marker_graph_init(ax, self.marker_pos_filled, 'Pos (mm)', x_data=self.frame_nums, style=MplStyle('red'))
         marker_graph_add(ax, self.marker_pos_labeled, self.frame_nums, MplStyle('indigo', marker='.'))
         add_vicon_start_stop(ax, self.trial.vicon_endpts[0] + 1, self.trial.vicon_endpts[1])
+        marker_graph_title(fig, self.trial.trial_name + ' ' + self.marker_name)
         make_interactive()
         return [fig]
 
@@ -91,8 +97,10 @@ class SmoothingDebugPlotter:
         return figs
 
     def plot_marker_data(self, title, y_label, kine_var, fig_num, add_sd=True, clip_graph=False, marker=''):
-        fig, ax, lines_raw = marker_graph_init(getattr(self.raw.means, kine_var), title, y_label, fig_num,
-                                               x_data=self.frames, style=MplStyle('indigo', marker=marker))
+        fig = plt.figure(num=fig_num)
+        ax = fig.subplots(3, 1, sharex=True)
+        lines_raw = marker_graph_init(ax, getattr(self.raw.means, kine_var), y_label, x_data=self.frames,
+                                      style=MplStyle('indigo', marker=marker))
         lines_filtered = marker_graph_add(ax, getattr(self.filtered.means, kine_var), self.filtered_frames,
                                           style=MplStyle('red'))
         lines_smoothed = marker_graph_add(ax, getattr(self.smoothed.means, kine_var), self.filtered_frames,
@@ -110,23 +118,30 @@ class SmoothingDebugPlotter:
             add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
         fig.legend((lines_raw[0], lines_filtered[0], lines_smoothed[0]), ('Raw', 'Filtered', 'Smoothed'), 'upper right',
                    labelspacing=0.1)
+        marker_graph_title(fig, title)
         make_interactive()
         return fig
 
     def plot_marker_data_smooth(self, title, y_label, kine_var, fig_num):
-        fig, ax, lines_smoothed = marker_graph_init(getattr(self.smoothed.means, kine_var), title, y_label, fig_num,
-                                                    x_data=self.filtered_frames, style=MplStyle('limegreen'))
+        fig = plt.figure(num=fig_num)
+        ax = fig.subplots(3, 1, sharex=True)
+        lines_smoothed = marker_graph_init(ax, getattr(self.smoothed.means, kine_var), y_label,
+                                           x_data=self.filtered_frames, style=MplStyle('limegreen'))
         fig.legend([lines_smoothed[0]], ['Smoothed'], 'upper right', labelspacing=0.1)
         add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
+        marker_graph_title(fig, title)
         make_interactive()
         return fig
 
     def plot_marker_data_diff(self, title, y_label, fig_num):
-        fig, ax, lines_filtered = marker_graph_init(self.filtered_pos_diff, title, y_label, fig_num,
-                                                    x_data=self.filtered_frames, style=MplStyle('red'))
+        fig = plt.figure(num=fig_num)
+        ax = fig.subplots(3, 1, sharex=True)
+        lines_filtered = marker_graph_init(ax, self.filtered_pos_diff, y_label, x_data=self.filtered_frames,
+                                           style=MplStyle('red'))
         lines_smoothed = marker_graph_add(ax, self.smoothed_pos_diff, self.filtered_frames, style=MplStyle('limegreen'))
         fig.legend((lines_filtered[0], lines_smoothed[0]), ('Filtered', 'Smoothed'), 'upper right', labelspacing=0.1)
         add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
+        marker_graph_title(fig, title)
         make_interactive()
         return fig
 
@@ -148,32 +163,40 @@ class SmoothingDebugPlotter:
             filtered_diff = self.filtered_pos_diff
             smoothed_diff = self.smoothed_pos_diff
 
-        fig, ax, lines_filtered = marker_diff_his_init(filtered_diff, title, x_label, fig_num, 'red')
+        fig = plt.figure(num=fig_num)
+        ax = fig.subplots(1, 3, sharey=True)
+        lines_filtered = marker_diff_his_init(ax, filtered_diff, x_label, 'red')
         lines_smoothed = marker_diff_his_add(ax, smoothed_diff, 'limegreen')
-
         fig.legend((lines_filtered[0], lines_smoothed[0]), ('Filtered', 'Smoothed'), 'upper right', labelspacing=0.1)
+        marker_graph_title(fig, title)
         make_interactive()
         return fig
 
     def plot_cov(self, title, y_labels, fig_num):
-        fig, ax, lines_filtered = cov_trend_graph_init(self.filtered.covars, self.filtered_frames, title, y_labels,
-                                                       fig_num, np.sqrt, style=MplStyle('red'))
+        fig = plt.figure(num=fig_num)
+        ax = fig.subplots(3, 3, sharex='all', sharey='row')
+        lines_filtered = cov_trend_graph_init(ax, self.filtered.covars, self.filtered_frames, y_labels, np.sqrt,
+                                              style=MplStyle('red'))
         lines_smooth = cov_trend_graph_add(ax, self.smoothed.covars, self.filtered_frames, np.sqrt,
                                            style=MplStyle('limegreen'))
         fig.legend((lines_filtered[0][0], lines_smooth[0][0]), ('Filtered', 'Smoothed'), 'upper right',
                    labelspacing=0.1, ncol=2)
         add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
+        marker_graph_title(fig, title)
         make_interactive()
         return fig
 
     def plot_corr(self, title, y_labels, fig_num):
-        fig, ax, lines_filtered = cov_trend_graph_init(self.filtered.corrs, self.filtered_frames, title, y_labels,
-                                                       fig_num, lambda x: x, style=MplStyle('red'))
+        fig = plt.figure(num=fig_num)
+        ax = fig.subplots(3, 3, sharex='all', sharey='row')
+        lines_filtered = cov_trend_graph_init(ax, self.filtered.corrs, self.filtered_frames, y_labels, lambda x: x,
+                                              style=MplStyle('red'))
         lines_smooth = cov_trend_graph_add(ax, self.smoothed.corrs, self.filtered_frames, lambda x: x,
                                            style=MplStyle('limegreen'))
         fig.legend((lines_filtered[0][0], lines_smooth[0][0]), ('Filtered', 'Smoothed'), 'upper right',
                    labelspacing=0.1, ncol=2)
         add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
+        marker_graph_title(fig, title)
         make_interactive()
         return fig
 
@@ -208,8 +231,9 @@ class SmoothingOutputPlotter(SmoothingDebugPlotter):
         return figs
 
     def plot_pos_data(self, title, y_label, kine_var, fig_num, add_sd=True, clip_graph=False):
-        fig, ax, lines_filled = marker_graph_init(self.filled.means.pos, title, y_label, fig_num, x_data=self.frames,
-                                                  style=MplStyle('red'))
+        fig = plt.figure(num=fig_num)
+        ax = fig.subplots(3, 1, sharex=True)
+        lines_filled = marker_graph_init(ax, self.filled.means.pos, y_label, x_data=self.frames, style=MplStyle('red'))
         lines_raw = marker_graph_add(ax, self.raw.means.pos, self.frames, style=MplStyle('indigo', marker='.'))
         lines_smoothed = marker_graph_add(ax, getattr(self.smoothed.means, kine_var), self.filtered_frames,
                                           style=MplStyle('limegreen', lw=1))
@@ -223,15 +247,19 @@ class SmoothingOutputPlotter(SmoothingDebugPlotter):
         else:
             add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
 
+        plt.tight_layout(pad=1.0, w_pad=1.0, h_pad=0)
         fig.suptitle(title, x=0.25, fontsize=11, fontweight='bold')
+        plt.subplots_adjust(top=0.94)
         fig.legend((lines_raw[0], lines_filled[0], lines_smoothed[0]), ('Raw', 'Filled', 'Smoothed'), 'upper right',
                    labelspacing=0.1, ncol=3, columnspacing=0.3)
         make_interactive()
         return fig
 
     def plot_marker_data(self, title, y_label, kine_var, fig_num, add_sd=True, clip_graph=False, marker=''):
-        fig, ax, lines_raw = marker_graph_init(getattr(self.raw.means, kine_var), title, y_label, fig_num,
-                                               x_data=self.frames, style=MplStyle('indigo', marker=marker))
+        fig = plt.figure(num=fig_num)
+        ax = fig.subplots(3, 1, sharex=True)
+        lines_raw = marker_graph_init(ax, getattr(self.raw.means, kine_var), y_label, x_data=self.frames,
+                                      style=MplStyle('indigo', marker=marker))
         lines_smoothed = marker_graph_add(ax, getattr(self.smoothed.means, kine_var), self.filtered_frames,
                                           MplStyle('limegreen'))
 
@@ -245,14 +273,18 @@ class SmoothingOutputPlotter(SmoothingDebugPlotter):
             add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
         fig.legend((lines_raw[0], lines_smoothed[0]), ('Raw', 'Smoothed'), 'upper right', labelspacing=0.1, ncol=2,
                    columnspacing=0.3)
+        marker_graph_title(fig, title)
         make_interactive()
         return fig
 
     def plot_marker_data_diff(self, title, y_label, fig_num):
-        fig, ax, lines_smoothed = marker_graph_init(self.smoothed_pos_diff, title, y_label, fig_num,
-                                                    x_data=self.filtered_frames, style=MplStyle('limegreen'))
+        fig = plt.figure(num=fig_num)
+        ax = fig.subplots(3, 1, sharex=True)
+        lines_smoothed = marker_graph_init(ax, self.smoothed_pos_diff, y_label, x_data=self.filtered_frames,
+                                           style=MplStyle('limegreen'))
         fig.legend([lines_smoothed[0]], ['Smoothed'], 'upper right', labelspacing=0.1)
         add_vicon_start_stop(ax, self.vicon_frame_endpts[0], self.vicon_frame_endpts[1])
+        marker_graph_title(fig, title)
         make_interactive()
         return fig
 
@@ -272,22 +304,10 @@ class SmoothingOutputPlotter(SmoothingDebugPlotter):
         else:
             smoothed_diff = self.smoothed_pos_diff
 
-        fig, ax, lines_smoothed = marker_diff_his_init(smoothed_diff, title, x_label, fig_num, 'limegreen')
-
+        fig = plt.figure(num=fig_num)
+        ax = fig.subplots(1, 3, sharey=True)
+        lines_smoothed = marker_diff_his_init(ax, smoothed_diff, x_label, 'limegreen')
         fig.legend([lines_smoothed[0]], ['Smoothed'], 'upper right', labelspacing=0.1)
-        make_interactive()
-        return fig
-
-
-class AccuracySmoothingPlotter:
-    def __init__(self, trial_name, marker_name, diff_data, frames):
-        self.trial_name = trial_name
-        self.marker_name = marker_name
-        self.diff_data = diff_data
-        self.frames = frames
-
-    def plot(self):
-        fig, ax, lines = marker_graph_init(self.diff_data, self.trial_name + ':' + self.marker_name, 'Distance (mm)',
-                                           0, x_data=self.frames, style=MplStyle('indigo'))
+        marker_graph_title(fig, title)
         make_interactive()
         return fig

@@ -3,7 +3,7 @@ import distutils.util
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from biplane_kine.database.db_common import MARKERS
-from biplane_kine.graphing.plotters import SmoothingOutputPlotter
+from biplane_kine.graphing.smoothing_plotters import SmoothingOutputPlotter
 from biplane_kine.smoothing.kf_filtering_helpers import (post_process_raw, kf_filter_marker_piecewise, combine_pieces,
                                                          InsufficientDataError)
 import logging
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     from biplane_kine.database import create_db
     from biplane_kine.database.dynamic_subject import DynamicSubject
     from biplane_kine.misc.json_utils import Params
-    from biplane_kine.graphing.graph_utils import init_graphing
+    from biplane_kine.graphing.common_graph_utils import init_graphing
     from ..parameters import read_smoothing_exceptions
     from logging.config import fileConfig
 
