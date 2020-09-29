@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+from scipy.spatial.transform import Rotation
+from ..kinematics.cs import ht_r
 
 ACTIVITY_TYPES = ['CA', 'SA', 'FE', 'ERa90', 'ERaR', 'IRaB', 'IRaM', 'Static', 'WCA', 'WSA', 'WFE']
 MARKERS = ['T10', 'T5', 'C7', 'STRN', 'CLAV', 'LSHO', 'LCLAV', 'RCLAV', 'RSH0', 'RACRM', 'RSPIN', 'RANGL', 'RUPAA',
@@ -59,12 +61,23 @@ class SubjectDescriptor:
 class ViconCSTransform:
     def __init__(self, f_t_v_file, **kwargs):
         super().__init__(**kwargs)
-        self.F_T_V_file = f_t_v_file
-        assert(self.F_T_V_file.is_file())
-        self._F_T_V_data = None
+        self.f_t_v_file = f_t_v_file
+        assert(self.f_t_v_file.is_file())
+        self._f_t_v_data = None
+        self._f_t_v = None
 
     @property
     def f_t_v_data(self):
-        if self._F_T_V_data is None:
-            self._F_T_V_data = pd.read_csv(self.F_T_V_file, header=0)
-        return self._F_T_V_data
+        if self._f_t_v_data is None:
+            self._f_t_v_data = pd.read_csv(self.f_t_v_file, header=0)
+        return self._f_t_v_data
+
+    @property
+    def f_t_v(self):
+        if self._f_t_v is None:
+            q_imp = self.f_t_v_data.iloc[0, :4].to_numpy()
+            # convert to scalar last format
+            q = np.concatenate((q_imp[1:], [q_imp[0]]))
+            r = Rotation.from_quat(q)
+            self._f_t_v = ht_r(r.as_matrix(), self.f_t_v_data.iloc[0, 4:].to_numpy())
+        return self._f_t_v

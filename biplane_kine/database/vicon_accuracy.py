@@ -17,6 +17,7 @@ class ViconAccuracyTrial(TrialDescriptor):
         self._marker_files = {file.stem: file for file in self.trial_dir_path.iterdir() if
                               (file.stem in MARKERS)}
         self._marker_data = {k: ViconAccuracyTrial.process_marker_file(v) for k, v in self._marker_files.items()}
+        self.markers = self._marker_files.keys()
 
     @staticmethod
     def read_marker_file(file_path):
@@ -24,11 +25,15 @@ class ViconAccuracyTrial(TrialDescriptor):
 
     @staticmethod
     def process_marker_file(file_path):
-        marker_data = ViconAccuracyTrial.read_marker_file(file_path).to_numpy()
-        return ViconAccuracyMarkerData(marker_data[:, 0] - 1, marker_data[:, 0], marker_data[:, 1:])
+        marker_data = ViconAccuracyTrial.read_marker_file(file_path)
+        frames = marker_data.index.to_numpy()
+        return ViconAccuracyMarkerData(frames - 1, frames, marker_data.to_numpy())
 
     def __getitem__(self, marker_name):
         return self._marker_data[marker_name]
+
+    def __iter__(self):
+        return (i for i in self._marker_data.items())
 
 
 class ViconAccuracyTrialEndpts(ViconAccuracyTrial, ViconEndpts):

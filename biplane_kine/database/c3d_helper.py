@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from ezc3d import c3d
 from .db_common import TrialDescriptor, ViconEndpts, SubjectDescriptor, trial_descriptor_df
+from ..misc.python_utils import NestedContainer
 
 
 class C3DHelper:
@@ -18,8 +19,8 @@ class C3DHelper:
         self.marker_data = c3d_obj['data']['points']
         self.frames = np.arange(self.marker_data.shape[2])
 
-    def data_for_marker(self, marker_name):
-        return self.marker_data[0:3, self.marker_map[marker_name], :].T
+    def __getitem__(self, marker_name):
+        return self.marker_data[:, self.marker_map[marker_name], :].T
 
 
 class C3DTrial(TrialDescriptor):
@@ -33,6 +34,8 @@ class C3DTrial(TrialDescriptor):
 
         self._labeled_c3d = None
         self._filled_c3d = None
+        self.labeled = NestedContainer(self.labeled_c3d)
+        self.filled = NestedContainer(self.filled_c3d)
 
     @property
     def labeled_c3d(self):
@@ -45,12 +48,6 @@ class C3DTrial(TrialDescriptor):
         if self._filled_c3d is None:
             self._filled_c3d = C3DHelper(str(self.filled_c3d_path))
         return self._filled_c3d
-
-    def marker_data_labeled(self, marker_name):
-        return self.labeled_c3d.data_for_marker(marker_name)
-
-    def marker_data_filled(self, marker_name):
-        return self.filled_c3d.data_for_marker(marker_name)
 
 
 class C3DTrialEndpts(C3DTrial, ViconEndpts):

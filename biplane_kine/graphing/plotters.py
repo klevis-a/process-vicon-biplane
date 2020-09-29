@@ -277,3 +277,17 @@ class SmoothingOutputPlotter(SmoothingDebugPlotter):
         fig.legend([lines_smoothed[0]], ['Smoothed'], 'upper right', labelspacing=0.1)
         make_interactive()
         return fig
+
+
+class AccuracySmoothingPlotter:
+    def __init__(self, trial_name, marker_name, diff_data, frames):
+        self.trial_name = trial_name
+        self.marker_name = marker_name
+        self.diff_data = diff_data
+        self.frames = frames
+
+    def plot(self):
+        fig, ax, lines = marker_graph_init(self.diff_data, self.trial_name + ':' + self.marker_name, 'Distance (mm)',
+                                           0, x_data=self.frames, style=MplStyle('indigo'))
+        make_interactive()
+        return fig
