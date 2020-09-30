@@ -1,9 +1,14 @@
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from lazy import lazy
 from ezc3d import c3d
 from .db_common import TrialDescriptor, ViconEndpts, SubjectDescriptor, trial_descriptor_df
 from ..misc.python_utils import NestedContainer
+
+
+def c3d_get_item_method(c3d_helper, item):
+    return c3d_helper[item]
 
 
 class C3DHelper:
@@ -32,29 +37,21 @@ class C3DTrial(TrialDescriptor):
 
         super().__init__(trial_dir_path=self.labeled_c3d_path, **kwargs)
 
-        self._labeled_c3d = None
-        self._filled_c3d = None
-        self.labeled = NestedContainer(self.labeled_c3d)
-        self.filled = NestedContainer(self.filled_c3d)
-
-    @property
+    @lazy
     def labeled_c3d(self):
-        if self._labeled_c3d is None:
-            self._labeled_c3d = C3DHelper(str(self.labeled_c3d_path))
-        return self._labeled_c3d
+        return C3DHelper(str(self.labeled_c3d_path))
 
-    @property
+    @lazy
     def filled_c3d(self):
-        if self._filled_c3d is None:
-            self._filled_c3d = C3DHelper(str(self.filled_c3d_path))
-        return self._filled_c3d
+        return C3DHelper(str(self.filled_c3d_path))
 
-    # creating the two methods below to maintain compatibility (for now) for smooth_marker_from_c3d
-    def marker_data_labeled(self, marker_name):
-        return self.labeled[marker_name][:, :3]
+    @lazy
+    def labeled(self):
+        return NestedContainer(self.labeled_c3d, c3d_get_item_method)
 
-    def marker_data_filled(self, marker_name):
-        return self.filled[marker_name][:, :3]
+    @lazy
+    def filled(self):
+        return NestedContainer(self.filled_c3d, c3d_get_item_method)
 
 
 class C3DTrialEndpts(C3DTrial, ViconEndpts):
@@ -64,7 +61,7 @@ class C3DTrialEndpts(C3DTrial, ViconEndpts):
 
 
 class C3DSubjectEndpts(SubjectDescriptor):
-    def __init__(self, subject_dir, labeled_base_dir, filled_base_dir):
+    def __init__(self, subject_dir, labeled_base_dir, filled_base_dir, c3d_trial_cls=C3DTrialEndpts):
         self.subject_dir_path = subject_dir if isinstance(subject_dir, Path) else Path(subject_dir)
         self.static_dir = self.subject_dir_path / 'Static'
         super().__init__(subject_dir_path=self.subject_dir_path)
@@ -73,18 +70,14 @@ class C3DSubjectEndpts(SubjectDescriptor):
         self.filled_base_path = filled_base_dir if isinstance(filled_base_dir, Path) else Path(filled_base_dir)
 
         # trials
-        self.trials = [C3DTrialEndpts(self.labeled_base_path / self.subject_name / (trial_dir.stem + '.c3d'),
-                                      self.filled_base_path / self.subject_name / (trial_dir.stem + '.c3d'),
-                                      trial_dir / 'vicon_endpts.csv')
+        self.trials = [c3d_trial_cls(self.labeled_base_path / self.subject_name / (trial_dir.stem + '.c3d'),
+                                     self.filled_base_path / self.subject_name / (trial_dir.stem + '.c3d'),
+                                     trial_dir / 'vicon_endpts.csv')
                        for trial_dir in self.subject_dir_path.iterdir()
                        if (trial_dir.is_dir() and trial_dir.name != 'Static')]
 
-        # used for dataframe
-        self._df = None
-
-    @property
+    @lazy
     def subject_df(self):
-        if self._df is None:
-            self._df = trial_descriptor_df(self.subject_name, self.trials)
-            self._df['Trial'] = pd.Series(self.trials, dtype=object)
-        return self._df
+        df = trial_descriptor_df(self.subject_name, self.trials)
+        df['Trial'] = pd.Series(self.trials, dtype=object)
+        return df

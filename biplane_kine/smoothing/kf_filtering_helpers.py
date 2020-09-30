@@ -1,5 +1,6 @@
 import numpy as np
 import itertools
+import distutils.util
 from operator import itemgetter
 from scipy.signal import butter, sosfiltfilt
 from collections import namedtuple
@@ -12,7 +13,15 @@ log = logging.getLogger(__name__)
 FilterStep = namedtuple('FilterStep', ['endpts', 'indices', 'means', 'covars', 'corrs'])
 
 
-class InsufficientDataError(Exception):
+class Error(Exception):
+    pass
+
+
+class InsufficientDataError(Error):
+    pass
+
+
+class DoNotUseMarkerError(Error):
     pass
 
 
@@ -39,7 +48,7 @@ def pos_lowpass_filter(marker_pos_filled, start, num_points):
 def x0_guess(marker_pos_labeled, marker_pos_filled, dt, points_to_filter, points_to_average):
     start_idx, stop_idx = init_point(marker_pos_labeled, marker_pos_filled)
     if stop_idx - start_idx < 20:
-        raise InsufficientDataError
+        raise InsufficientDataError('Not enough data to make a starting point guess')
     if start_idx + points_to_filter > stop_idx:
         points_to_filter = stop_idx - start_idx
     x0_pos = pos_lowpass_filter(marker_pos_filled, start_idx, num_points=points_to_filter)
@@ -50,9 +59,7 @@ def x0_guess(marker_pos_labeled, marker_pos_filled, dt, points_to_filter, points
     return x0, start_idx, stop_idx
 
 
-def post_process_raw(trial, marker_name, dt):
-    marker_pos_labeled = trial.marker_data_labeled(marker_name)
-    marker_pos_filled = trial.marker_data_filled(marker_name)
+def post_process_raw(marker_pos_labeled, marker_pos_filled, dt):
     # raw velocity, acceleration
     marker_vel = np.gradient(marker_pos_labeled, dt, axis=0)
     marker_acc = np.gradient(marker_vel, dt, axis=0)
@@ -94,18 +101,12 @@ def kf_filter_marker_piece(marker_pos_labeled, marker_pos_filled, piece_start, p
     return filtered, smoothed
 
 
-def kf_filter_marker_all(trial, marker_name, dt):
-    marker_pos_labeled = trial.marker_data_labeled(marker_name)
-    marker_pos_filled = trial.marker_data_filled(marker_name)
-    filtered, smoothed = kf_filter_marker_piece(marker_pos_labeled, marker_pos_filled, 0, None, dt)
-
-    return filtered, smoothed
+def kf_filter_marker_all(marker_pos_labeled, marker_pos_filled, dt):
+    return kf_filter_marker_piece(marker_pos_labeled, marker_pos_filled, 0, None, dt)
 
 
-def kf_filter_marker_piecewise(trial, marker_name, dt, max_gap=75, max_gap_secondary=(30, 10), min_length=75):
-    marker_pos_labeled = trial.marker_data_labeled(marker_name)
-    marker_pos_filled = trial.marker_data_filled(marker_name)
-
+def kf_filter_marker_piecewise(marker_pos_labeled, marker_pos_filled, dt, max_gap=75, max_gap_secondary=(30, 10),
+                               min_length=75):
     start_idx, stop_idx = init_point(marker_pos_labeled, marker_pos_filled)
     nans_labeled = ~np.isnan(marker_pos_labeled[start_idx:stop_idx, 0])
     runs = find_runs(nans_labeled)
@@ -177,12 +178,10 @@ def kf_filter_marker_piecewise(trial, marker_name, dt, max_gap=75, max_gap_secon
     smoothed_pieces = []
     for i in range(num_pieces):
         if (pieces_end_idx[i] - pieces_start_idx[i]) < min_length:
-            log.info('Skipping Filtering piece %d running from %d to %d for trial %s marker %s.', i,
-                     pieces_start_idx[i], pieces_end_idx[i], trial.trial_name, marker_name)
+            log.info('Skipping Filtering piece %d running from %d to %d', i, pieces_start_idx[i], pieces_end_idx[i])
             continue
 
-        log.info('Filtering piece %d running from %d to %d for trial %s marker %s.', i,
-                 pieces_start_idx[i], pieces_end_idx[i], trial.trial_name, marker_name)
+        log.info('Filtering piece %d running from %d to %d ', i, pieces_start_idx[i], pieces_end_idx[i])
         piece_filtered, piece_smoothed = kf_filter_marker_piece(marker_pos_labeled, marker_pos_filled,
                                                                 pieces_start_idx[i], pieces_end_idx[i], dt)
         filtered_pieces.append(piece_filtered)
@@ -230,3 +229,28 @@ def combine_pieces(pieces):
     cov = LinearKF.CovarianceVec(pos_cov, vel_cov, acc_cov, pos_vel_cov, pos_acc_cov, vel_acc_cov)
     corr = LinearKF.CorrVec(pos_vel_corr, pos_acc_corr, vel_acc_corr)
     return FilterStep(endpts, indices, means, cov, corr)
+
+
+def piecewise_filter_with_exception(marker_exceptions, marker_pos_labeled, marker_pos_filled, dt, **kwargs):
+    should_use = bool(distutils.util.strtobool(marker_exceptions.get('use_marker', 'True')))
+    if not should_use:
+        log.warning('Skipping marker because it is labeled as DO NOT USE.')
+        raise DoNotUseMarkerError('Marker has been marked as DO NOT USE')
+    smoothing_params = marker_exceptions.get('smoothing_params', {})
+    frame_ignores = np.asarray(marker_exceptions.get('frame_ignores', []))
+
+    # ignore frames
+    if frame_ignores.size > 0:
+        marker_pos_labeled_copy = marker_pos_labeled.copy()
+        marker_pos_labeled_copy[frame_ignores - 1, :] = np.nan
+    else:
+        marker_pos_labeled_copy = marker_pos_labeled
+
+    combined_smoothing_params = {**kwargs, **smoothing_params}
+    raw, filled = post_process_raw(marker_pos_labeled, marker_pos_filled, dt)
+    filtered_pieces, smoothed_pieces = kf_filter_marker_piecewise(marker_pos_labeled_copy, marker_pos_filled, dt,
+                                                                  **combined_smoothing_params)
+    filtered = combine_pieces(filtered_pieces)
+    smoothed = combine_pieces(smoothed_pieces)
+
+    return raw, filled, filtered, smoothed

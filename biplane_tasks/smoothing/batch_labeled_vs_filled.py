@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from biplane_kine.database.db_common import MARKERS
 from biplane_kine.graphing.smoothing_plotters import LabeledFilledMarkerPlotter
+from .batch_kf_smoothing import create_and_save_error_figure
 import logging
 
 log = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ def trial_plotter(trial, subj_dir):
     trial_pdf_file = subj_dir / (trial.trial_name + '.pdf')
     with PdfPages(trial_pdf_file) as trial_pdf:
         for marker in MARKERS:
-            if marker in trial.vicon_data_labeled.columns:
+            if marker in trial.vicon_csv_data_labeled.columns:
                 log.info('Outputting marker %s', marker)
                 marker_plotter = LabeledFilledMarkerPlotter(trial, marker)
                 figs = marker_plotter.plot()
@@ -21,12 +22,8 @@ def trial_plotter(trial, subj_dir):
                     fig.clf()
                     plt.close(fig)
             else:
+                create_and_save_error_figure(marker, trial_pdf)
                 log.warning('Marker %s missing', marker)
-                temp_fig = plt.figure()
-                temp_fig.suptitle(marker, fontsize=11, fontweight='bold')
-                trial_pdf.savefig(temp_fig)
-                temp_fig.clf()
-                plt.close(temp_fig)
 
 
 if __name__ == '__main__':
@@ -36,7 +33,7 @@ if __name__ == '__main__':
     import sys
     from pathlib import Path
     from biplane_kine.database import create_db
-    from biplane_kine.database.dynamic_subject import DynamicSubject
+    from biplane_kine.database.vicon_csv import ViconCsvSubject
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.common_graph_utils import init_graphing
     from logging.config import fileConfig
@@ -51,7 +48,7 @@ if __name__ == '__main__':
 
     # ready db
     root_path = Path(params.output_dir)
-    db = create_db(params.db_dir, DynamicSubject)
+    db = create_db(params.vicon_csv_dir, ViconCsvSubject)
     init_graphing()
 
     # create plots

@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from lazy import lazy
 from scipy.spatial.transform import Rotation
 from ..kinematics.cs import ht_r
 
@@ -21,18 +22,16 @@ class ViconEndpts:
         super().__init__(**kwargs)
         self.endpts_file = endpts_file
         assert (self.endpts_file.is_file())
-        self._vicon_endpts = None
 
-    @property
+    @lazy
     def vicon_endpts(self):
-        if self._vicon_endpts is None:
-            endpts_df = pd.read_csv(self.endpts_file, header=0)
-            self._vicon_endpts = np.squeeze(endpts_df.to_numpy())
-            # the exported values assume that the first vicon frame is 1 but Python uses 0 based indexing
-            # the exported values are inclusive but most Python and numpy functions (arange) are exclusive of the stop
-            # so that's why the stop value is not modified
-            self._vicon_endpts[0] -= 1
-        return self._vicon_endpts
+        endpts_df = pd.read_csv(self.endpts_file, header=0)
+        vicon_endpts = np.squeeze(endpts_df.to_numpy())
+        # the exported values assume that the first vicon frame is 1 but Python uses 0 based indexing
+        # the exported values are inclusive but most Python and numpy functions (arange) are exclusive of the stop
+        # so that's why the stop value is not modified
+        vicon_endpts[0] -= 1
+        return vicon_endpts
 
 
 class TrialDescriptor:
@@ -63,21 +62,15 @@ class ViconCSTransform:
         super().__init__(**kwargs)
         self.f_t_v_file = f_t_v_file
         assert(self.f_t_v_file.is_file())
-        self._f_t_v_data = None
-        self._f_t_v = None
 
-    @property
+    @lazy
     def f_t_v_data(self):
-        if self._f_t_v_data is None:
-            self._f_t_v_data = pd.read_csv(self.f_t_v_file, header=0)
-        return self._f_t_v_data
+        return pd.read_csv(self.f_t_v_file, header=0)
 
-    @property
+    @lazy
     def f_t_v(self):
-        if self._f_t_v is None:
-            q_imp = self.f_t_v_data.iloc[0, :4].to_numpy()
-            # convert to scalar last format
-            q = np.concatenate((q_imp[1:], [q_imp[0]]))
-            r = Rotation.from_quat(q)
-            self._f_t_v = ht_r(r.as_matrix(), self.f_t_v_data.iloc[0, 4:].to_numpy())
-        return self._f_t_v
+        q_imp = self.f_t_v_data.iloc[0, :4].to_numpy()
+        # convert to scalar last format
+        q = np.concatenate((q_imp[1:], [q_imp[0]]))
+        r = Rotation.from_quat(q)
+        return ht_r(r.as_matrix(), self.f_t_v_data.iloc[0, 4:].to_numpy())

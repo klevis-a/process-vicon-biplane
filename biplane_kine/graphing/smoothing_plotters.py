@@ -10,7 +10,7 @@ class LabeledMarkerPloter:
     def __init__(self, trial, marker_name):
         self.trial = trial
         self.marker_name = marker_name
-        self.marker_pos_labeled = self.trial.marker_data_labeled(marker_name)
+        self.marker_pos_labeled = self.trial.labeled[marker_name]
         self.frame_nums = np.arange(self.marker_pos_labeled.shape[0]) + 1
 
     def plot(self):
@@ -26,7 +26,7 @@ class LabeledMarkerPloter:
 class LabeledFilledMarkerPlotter(LabeledMarkerPloter):
     def __init__(self, trial, marker_name):
         super().__init__(trial, marker_name)
-        self.marker_pos_filled = self.trial.marker_data_filled(marker_name)
+        self.marker_pos_filled = self.trial.filled[marker_name]
 
     def plot(self):
         fig = plt.figure(num=0)

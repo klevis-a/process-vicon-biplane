@@ -2,6 +2,7 @@ from pathlib import Path
 from collections import namedtuple
 import numpy as np
 import pandas as pd
+from lazy import lazy
 from .db_common import ViconEndpts, MARKERS, TrialDescriptor, SubjectDescriptor, ViconCSTransform, trial_descriptor_df
 
 ViconAccuracyMarkerData = namedtuple('ViconAccuracyMarkerData', ['indices', 'frames', 'data'])
@@ -16,7 +17,6 @@ class BiplaneMarkerTrial(TrialDescriptor):
         self.subject = subject
         self._marker_files = {file.stem: file for file in self.trial_dir_path.iterdir() if
                               (file.stem in MARKERS)}
-        self._marker_data = {k: BiplaneMarkerTrial.process_marker_file(v) for k, v in self._marker_files.items()}
         self.markers = self._marker_files.keys()
 
     @staticmethod
@@ -28,6 +28,10 @@ class BiplaneMarkerTrial(TrialDescriptor):
         marker_data = BiplaneMarkerTrial.read_marker_file(file_path)
         frames = marker_data.index.to_numpy()
         return ViconAccuracyMarkerData(frames - 1, frames, marker_data.to_numpy())
+
+    @lazy
+    def _marker_data(self):
+        return {k: BiplaneMarkerTrial.process_marker_file(v) for k, v in self._marker_files.items()}
 
     def __getitem__(self, marker_name):
         return self._marker_data[marker_name]
@@ -49,12 +53,9 @@ class BiplaneMarkerSubjectEndpts(SubjectDescriptor, ViconCSTransform):
                          **kwargs)
         self.trials = [BiplaneMarkerTrialEndpts(folder, self) for folder in self.subject_dir_path.iterdir()
                        if folder.is_dir()]
-        # used for dataframe
-        self._df = None
 
-    @property
+    @lazy
     def subject_df(self):
-        if self._df is None:
-            self._df = trial_descriptor_df(self.subject_name, self.trials)
-            self._df['Biplane_Marker_Trial'] = pd.Series(self.trials, dtype=object)
-        return self._df
+        df = trial_descriptor_df(self.subject_name, self.trials)
+        df['Biplane_Marker_Trial'] = pd.Series(self.trials, dtype=object)
+        return df

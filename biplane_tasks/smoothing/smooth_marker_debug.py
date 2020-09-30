@@ -1,5 +1,7 @@
-from .smooth_marker import marker_plotter, figs_to_pdf
 from biplane_kine.graphing.smoothing_plotters import SmoothingDebugPlotter
+import logging
+
+log = logging.getLogger(__name__)
 
 
 class SmoothingDebugPlotterProxy(SmoothingDebugPlotter):
@@ -14,14 +16,15 @@ if __name__ == '__main__':
     import sys
     from pathlib import Path
     import distutils.util
-    import matplotlib.pyplot as plt
     from biplane_kine.database import create_db
-    from biplane_kine.database.dynamic_subject import DynamicSubject
-    from biplane_tasks.parameters import read_smoothing_exceptions
+    from biplane_kine.database.vicon_csv import ViconCsvSubject
+    from biplane_kine.smoothing.kf_filtering_helpers import InsufficientDataError, DoNotUseMarkerError
+    from biplane_tasks.parameters import smoothing_exceptions_for_marker
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.common_graph_utils import init_graphing
     import logging
     from logging.config import fileConfig
+    from .smooth_marker import marker_plotter
 
     # initialize
     config_dir = Path(sys.argv[1])
@@ -33,21 +36,25 @@ if __name__ == '__main__':
 
     # ready db
     root_path = Path(params.output_dir)
-    db = create_db(params.db_dir, DynamicSubject)
+    db = create_db(params.vicon_csv_dir, ViconCsvSubject)
+
+    # select trial
+    trial_row = db.loc[params.trial_name]
+    sel_trial = trial_row.Trial
+    log.info('Filtering trial %s marker %s', params.trial_name, params.marker_name)
 
     # filter and plot
-    trial_row = db.loc[params.trial_name]
-    t = trial_row.Trial
-    log.info('Filtering trial %s marker %s', t.trial_name, params.marker_name)
-    all_exceptions = read_smoothing_exceptions(params.smoothing_exceptions)
+    marker_exceptions = smoothing_exceptions_for_marker(params.smoothing_exceptions, params.trial_name,
+                                                        params.marker_name)
     init_graphing()
-    figs = marker_plotter(t, params.marker_name, all_exceptions, db.attrs['dt'], SmoothingDebugPlotterProxy)
-    if figs is None:
+    subject_dir = Path(params.output_dir) / trial_row.Subject_Name if \
+        bool(distutils.util.strtobool(params.print_to_file)) else None
+    try:
+        marker_plotter(sel_trial, params.marker_name, marker_exceptions, db.attrs['dt'], SmoothingDebugPlotterProxy,
+                       subject_dir)
+    except InsufficientDataError as e:
+        log.error('Insufficient data for trial {} marker {}: {}'.format(params.trial_name, params.marker_name, e))
         sys.exit(1)
-    plt.show()
-
-    if bool(distutils.util.strtobool(params.print_to_file)):
-        subj_dir = Path(params.output_dir) / trial_row.Subject_Name
-        t_dir = subj_dir / trial_row.Trial_Name
-        t_dir.mkdir(parents=True, exist_ok=True)
-        figs_to_pdf(figs, t_dir, params.marker_name)
+    except DoNotUseMarkerError as e:
+        log.error('Marker {} for trial {} should not be used: {}'.format(params.trial_name, params.marker_name, e))
+        sys.exit(1)

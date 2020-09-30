@@ -1,34 +1,23 @@
 import os
-import numpy as np
-import distutils.util
+import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from biplane_tasks.parameters import marker_smoothing_exceptions
-from biplane_kine.smoothing.kf_filtering_helpers import post_process_raw, kf_filter_marker_piecewise, combine_pieces
+from biplane_kine.smoothing.kf_filtering_helpers import piecewise_filter_with_exception
 import logging
 log = logging.getLogger(__name__)
 
 
-def marker_plotter(trial, marker_name, all_except, dt, plotter_cls):
-    marker_exceptions = marker_smoothing_exceptions(all_except, trial.trial_name, marker_name)
-    should_use = bool(distutils.util.strtobool(marker_exceptions.get('use_marker', 'True')))
-    if not should_use:
-        log.warning('Skipping marker because it is labeled as DO NOT USE.')
-        return None
-    smoothing_params = marker_exceptions.get('smoothing_params', {})
-    frame_ignores = np.asarray(marker_exceptions.get('frame_ignores', []))
-
-    # ignore frames
-    if frame_ignores.size > 0:
-        trial.marker_data_labeled(marker_name)[frame_ignores - 1, :] = np.nan
-
-    raw, filled = post_process_raw(trial, marker_name, dt)
-    filtered_pieces, smoothed_pieces = kf_filter_marker_piecewise(trial, marker_name, dt, **smoothing_params)
-    filtered = combine_pieces(filtered_pieces)
-    smoothed = combine_pieces(smoothed_pieces)
+def marker_plotter(trial, marker_name, marker_except, dt, plotter_cls, subj_dir=None):
+    raw, filled, filtered, smoothed = \
+        piecewise_filter_with_exception(marker_except, trial.labeled[marker_name], trial.filled[marker_name], dt)
 
     plotter = plotter_cls(trial.trial_name, marker_name, raw, filled, filtered, smoothed, trial.vicon_endpts)
+    figs = plotter.plot()
+    plt.show()
 
-    return plotter.plot()
+    if subj_dir:
+        trial_dir = subj_dir / trial.trial_name
+        trial_dir.mkdir(parents=True, exist_ok=True)
+        figs_to_pdf(figs, trial_dir, marker_name)
 
 
 def figs_to_pdf(figures, trial_dir, marker_name):
@@ -50,11 +39,12 @@ if __name__ == '__main__':
 
     import sys
     from pathlib import Path
-    import matplotlib.pyplot as plt
+    import distutils.util
     from biplane_kine.database import create_db
-    from biplane_kine.database.dynamic_subject import DynamicSubject
+    from biplane_kine.database.vicon_csv import ViconCsvSubject
     from biplane_kine.graphing.smoothing_plotters import SmoothingOutputPlotter
-    from biplane_tasks.parameters import read_smoothing_exceptions
+    from biplane_tasks.parameters import smoothing_exceptions_for_marker
+    from biplane_kine.smoothing.kf_filtering_helpers import InsufficientDataError, DoNotUseMarkerError
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.common_graph_utils import init_graphing
     from logging.config import fileConfig
@@ -69,21 +59,25 @@ if __name__ == '__main__':
 
     # ready db
     root_path = Path(params.output_dir)
-    db = create_db(params.db_dir, DynamicSubject)
+    db = create_db(params.vicon_csv_dir, ViconCsvSubject)
+
+    # select trial
+    trial_row = db.loc[params.trial_name]
+    sel_trial = trial_row.Trial
+    log.info('Filtering trial %s marker %s', params.trial_name, params.marker_name)
 
     # filter and plot
-    trial_row = db.loc[params.trial_name]
-    t = trial_row.Trial
-    log.info('Filtering trial %s marker %s', t.trial_name, params.marker_name)
-    all_exceptions = read_smoothing_exceptions(params.smoothing_exceptions)
+    marker_exceptions = smoothing_exceptions_for_marker(params.smoothing_exceptions, params.trial_name,
+                                                        params.marker_name)
     init_graphing()
-    figs = marker_plotter(t, params.marker_name, all_exceptions, db.attrs['dt'], SmoothingOutputPlotter)
-    if figs is None:
+    subject_dir = Path(params.output_dir) / trial_row.Subject_Name if \
+        bool(distutils.util.strtobool(params.print_to_file)) else None
+    try:
+        marker_plotter(sel_trial, params.marker_name, marker_exceptions, db.attrs['dt'], SmoothingOutputPlotter,
+                       subject_dir)
+    except InsufficientDataError as e:
+        log.error('Insufficient data for trial {} marker {}: {}'.format(params.trial_name, params.marker_name, e))
         sys.exit(1)
-    plt.show()
-
-    if bool(distutils.util.strtobool(params.print_to_file)):
-        subj_dir = Path(params.output_dir) / trial_row.Subject_Name
-        t_dir = subj_dir / trial_row.Trial_Name
-        t_dir.mkdir(parents=True, exist_ok=True)
-        figs_to_pdf(figs, t_dir, params.marker_name)
+    except DoNotUseMarkerError as e:
+        log.error('Marker {} for trial {} should not be used: {}'.format(params.trial_name, params.marker_name, e))
+        sys.exit(1)

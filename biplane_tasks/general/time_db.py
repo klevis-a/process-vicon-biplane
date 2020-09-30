@@ -9,7 +9,7 @@ if __name__ == '__main__':
     import sys
     from biplane_kine.misc.file_utils import pretty_size
     from biplane_kine.database import create_db
-    from biplane_kine.database.dynamic_subject import DynamicSubject
+    from biplane_kine.database.vicon_csv import ViconCsvSubject
     from biplane_kine.misc.json_utils import Params
 
     process = psutil.Process(os.getpid())
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     start = time.time()
     config_dir = Path(sys.argv[1])
     params = Params.get_params(config_dir / 'parameters.json')
-    db = create_db(params.db_dir, DynamicSubject)
+    db = create_db(params.vicon_csv_dir, ViconCsvSubject)
     end = time.time()
     print(end - start)
 
