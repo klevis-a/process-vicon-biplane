@@ -1,8 +1,8 @@
 from pythonGraphingLibrary import plotUtils
 
 
-def marker_diff_graph(ax, marker_data, y_label, x_label, x_data):
-    lines = ax.plot(x_data, marker_data)
+def marker_diff_graph(ax, marker_data, y_label, x_label, x_data, **kwargs):
+    lines = ax.plot(x_data, marker_data, **kwargs)
     plotUtils.update_spines(ax)
     plotUtils.update_xticks(ax, font_size=8)
     plotUtils.update_yticks(ax, fontsize=8)

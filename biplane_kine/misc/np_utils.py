@@ -30,3 +30,11 @@ def find_runs(x):
         run_lengths = np.diff(np.append(run_starts, n))
 
         return run_values, run_starts, run_lengths
+
+
+def rms(vec, axis=0):
+    return np.sqrt(np.mean(np.square(vec), axis=axis))
+
+
+def mae(vec, axis=0):
+    return np.mean(np.absolute(vec), axis=axis)

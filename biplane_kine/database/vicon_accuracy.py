@@ -5,7 +5,7 @@ import pandas as pd
 from lazy import lazy
 from .db_common import ViconEndpts, MARKERS, TrialDescriptor, SubjectDescriptor, ViconCSTransform, trial_descriptor_df
 
-ViconAccuracyMarkerData = namedtuple('ViconAccuracyMarkerData', ['indices', 'frames', 'data'])
+ViconAccuracyMarkerData = namedtuple('ViconAccuracyMarkerData', ['indices', 'data'])
 VICON_ACCURACY_FILE_HEADERS = {'frame': np.int32, 'x': np.float64, 'y': np.float64, 'z': np.float64}
 
 
@@ -27,7 +27,7 @@ class BiplaneMarkerTrial(TrialDescriptor):
     def process_marker_file(file_path):
         marker_data = BiplaneMarkerTrial.read_marker_file(file_path)
         frames = marker_data.index.to_numpy()
-        return ViconAccuracyMarkerData(frames - 1, frames, marker_data.to_numpy())
+        return ViconAccuracyMarkerData(frames - 1, marker_data.to_numpy())
 
     @lazy
     def _marker_data(self):
