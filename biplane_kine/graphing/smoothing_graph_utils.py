@@ -4,7 +4,6 @@ import numpy as np
 from collections.abc import Iterable
 from matplotlib import axes
 from pythonGraphingLibrary import plotUtils
-from biplane_kine.graphing.common_graph_utils import MplStyle
 
 
 def marker_graph_title(fig, title):
@@ -13,11 +12,10 @@ def marker_graph_title(fig, title):
     plt.subplots_adjust(top=0.94)
 
 
-def marker_graph_init(ax, marker_data, y_label, x_data, style=MplStyle('blue')):
+def marker_graph_init(ax, marker_data, y_label, x_data, **kwargs):
     lines = []
     for n in range(3):
-        current_line, = ax[n].plot(x_data, marker_data[:, n], linestyle=style.ls, linewidth=style.lw,
-                                   marker=style.marker, markersize=style.ms, color=style.color)
+        current_line, = ax[n].plot(x_data, marker_data[:, n], **kwargs)
         lines.append(current_line)
         plotUtils.update_spines(ax[n])
         plotUtils.update_xticks(ax[n], font_size=8)
@@ -32,11 +30,10 @@ def marker_graph_init(ax, marker_data, y_label, x_data, style=MplStyle('blue')):
     return lines
 
 
-def marker_graph_add(ax, marker_data, x_data, style=MplStyle('green')):
+def marker_graph_add(ax, marker_data, x_data, **kwargs):
     lines = []
     for n in range(3):
-        current_line, = ax[n].plot(x_data, marker_data[:, n], linestyle=style.ls, linewidth=style.lw,
-                                   marker=style.marker, markersize=style.ms, color=style.color)
+        current_line, = ax[n].plot(x_data, marker_data[:, n], **kwargs)
         lines.append(current_line)
     return lines
 
@@ -79,15 +76,14 @@ def marker_diff_his_add(axs, smoothed_diff, color):
     return polygons_smoothed
 
 
-def cov_trend_graph_init(ax, variance_data, x_data, y_labels, process_func, style):
+def cov_trend_graph_init(ax, variance_data, x_data, y_labels, process_func, **kwargs):
     lines = []
     # iterate over pos, vel, acc
     for i in range(3):
         # iterate over dimension
         dim_lines = []
         for j in range(3):
-            line, = ax[i, j].plot(x_data, process_func(variance_data[i][:, j]), linestyle=style.ls, linewidth=style.lw,
-                                  marker=style.marker, markersize=style.ms, color=style.color)
+            line, = ax[i, j].plot(x_data, process_func(variance_data[i][:, j]), **kwargs)
             dim_lines.append(line)
             plotUtils.update_spines(ax[i, j])
             plotUtils.update_xticks(ax[i, j], font_size=8)
@@ -104,15 +100,14 @@ def cov_trend_graph_init(ax, variance_data, x_data, y_labels, process_func, styl
     return lines
 
 
-def cov_trend_graph_add(ax, variance_data, x_data, process_func, style):
+def cov_trend_graph_add(ax, variance_data, x_data, process_func, **kwargs):
     lines = []
     # iterate over pos, vel, acc
     for i in range(3):
         # iterate over dimension
         dim_lines = []
         for j in range(3):
-            line, = ax[i, j].plot(x_data, process_func(variance_data[i][:, j]), linestyle=style.ls, linewidth=style.lw,
-                                  marker=style.marker, markersize=style.ms, color=style.color)
+            line, = ax[i, j].plot(x_data, process_func(variance_data[i][:, j]), **kwargs)
             dim_lines.append(line)
         lines.append(dim_lines)
     return lines
