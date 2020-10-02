@@ -1,3 +1,4 @@
+from pathlib import Path
 from biplane_kine.database.c3d_helper import C3DTrial
 from .biplane_vicon_diff import BiplaneViconSmoothDiff
 import logging
@@ -22,7 +23,6 @@ if __name__ == '__main__':
         print('Use -m option to run this library module as a script.')
 
     import sys
-    from pathlib import Path
     import matplotlib.pyplot as plt
     from biplane_tasks.parameters import smoothing_exceptions_for_marker
     from biplane_kine.database import create_db

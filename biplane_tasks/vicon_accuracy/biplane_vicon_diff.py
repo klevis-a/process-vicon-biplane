@@ -1,6 +1,6 @@
 import numpy as np
 from lazy import lazy
-from biplane_kine.misc.np_utils import rms, mae
+from biplane_kine.misc.np_utils import nanrms, nanmae
 from biplane_kine.kinematics.vec_ops import extended_dot
 from biplane_kine.kinematics.cs import vec_transform, make_vec_hom
 from biplane_kine.smoothing.kf_filtering_helpers import piecewise_filter_with_exception
@@ -24,27 +24,27 @@ class BiplaneViconDiff:
 
     @lazy
     def raw_rms(self):
-        return rms(self.raw_diff, axis=0)
+        return nanrms(self.raw_diff, axis=0)
 
     @lazy
     def raw_rms_scalar(self):
-        return rms(self.raw_diff_scalar, axis=0)
+        return nanrms(self.raw_diff_scalar, axis=0)
 
     @lazy
     def raw_mae(self):
-        return mae(self.raw_diff, axis=0)
+        return nanmae(self.raw_diff, axis=0)
 
     @lazy
     def raw_mae_scalar(self):
-        return mae(self.raw_diff_scalar, axis=0)
+        return nanmae(self.raw_diff_scalar, axis=0)
 
     @lazy
     def raw_max(self):
-        return np.max(np.absolute(self.raw_diff), axis=0)
+        return np.nanmax(np.absolute(self.raw_diff), axis=0)
 
     @lazy
     def raw_max_scalar(self):
-        return np.max(np.absolute(self.raw_diff_scalar), axis=0)
+        return np.nanmax(np.absolute(self.raw_diff_scalar), axis=0)
 
 
 class BiplaneViconSmoothDiff(BiplaneViconDiff):
@@ -77,24 +77,24 @@ class BiplaneViconSmoothDiff(BiplaneViconDiff):
 
     @lazy
     def smoothed_rms(self):
-        return rms(self.smoothed_diff, axis=0)
+        return nanrms(self.smoothed_diff, axis=0)
 
     @lazy
     def smoothed_rms_scalar(self):
-        return rms(self.smoothed_diff_scalar, axis=0)
+        return nanrms(self.smoothed_diff_scalar, axis=0)
 
     @lazy
     def smoothed_mae(self):
-        return mae(self.smoothed_diff, axis=0)
+        return nanmae(self.smoothed_diff, axis=0)
 
     @lazy
     def smoothed_mae_scalar(self):
-        return mae(self.smoothed_diff_scalar, axis=0)
+        return nanmae(self.smoothed_diff_scalar, axis=0)
 
     @lazy
     def smoothed_max(self):
-        return np.max(np.absolute(self.smoothed_diff), axis=0)
+        return np.nanmax(np.absolute(self.smoothed_diff), axis=0)
 
     @lazy
     def smoothed_max_scalar(self):
-        return np.max(np.absolute(self.smoothed_diff_scalar), axis=0)
+        return np.nanmax(np.absolute(self.smoothed_diff_scalar), axis=0)

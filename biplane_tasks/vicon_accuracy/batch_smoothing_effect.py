@@ -1,83 +1,36 @@
+from pythonGraphingLibrary import plotUtils, bp_utils
 import matplotlib.pyplot as plt
-import numpy as np
-import distutils.util
-from biplane_kine.database.c3d_helper import C3DTrial
-from biplane_kine.kinematics.cs import vec_transform
-from biplane_tasks.parameters import marker_smoothing_exceptions
-from biplane_kine.graphing.vicon_accuracy_plotters import ViconAccuracySmoothingPlotter
-from biplane_kine.graphing.common_graph_utils import init_graphing
-from biplane_kine.smoothing.kf_filtering_helpers import kf_filter_marker_piecewise, combine_pieces
 
 
-def add_c3d_helper(db_df, vicon_labeled_path, vicon_filled_path):
-    def create_c3d_helper(row, labeled_path, filled_path):
-        return C3DTrial(str(Path(labeled_path) / row['Subject_Name'] / (row['Trial_Name'] + '.c3d')),
-                        str(Path(filled_path) / row['Subject_Name'] / (row['Trial_Name'] + '.c3d')))
+def create_summary_boxplot(ax, diff_data, y_label, group_names, metric_names, n_obs_pos):
+    num_metrics = len(metric_names)
+    # calculations
+    num_bars, num_obs, num_groups, box_positions = bp_utils.calc_bar_positions(diff_data, num_metrics)
 
-    db_df['C3D_Trial'] = db_df.apply(create_c3d_helper, axis=1, args=[vicon_labeled_path, vicon_filled_path])
+    # create figure and rudimentary boxplot
+    bp = bp_utils.create_rudimentary_bp(ax, diff_data, box_positions)
 
+    # colormap
+    color_map = plt.get_cmap('Dark2')
 
-def compute_accuracy_diff(row, all_except, dt):
-    biplane_trial = row['Biplane_Marker_Trial']
-    c3d_trial = row['C3D_Trial']
-    endpts = biplane_trial.vicon_endpts
+    # now start updating boxplot elements
+    bp_utils.update_bp_boxes(bp, num_metrics, color_map)
+    bp_utils.update_bp_whiskers(bp, num_metrics, color_map)
+    bp_utils.update_bp_caps(bp, num_metrics, color_map)
+    bp_utils.update_bp_medians(bp)
+    bp_utils.update_bp_fliers(bp, num_metrics, color_map)
+    bp_utils.bp_vertical_sep(ax, num_groups, num_metrics)
+    bp_utils.update_bp_xticks_groups(ax, num_bars, num_groups, num_metrics, group_names, font_size=12)
+    plotUtils.update_yticks(ax, fontsize=10)
+    plotUtils.update_spines(ax)
+    plotUtils.update_ylabel(ax, y_label, font_size=12)
 
-    plotter_by_marker = {}
-    for marker, acc_marker_data in biplane_trial:
-        marker_exceptions = marker_smoothing_exceptions(all_except, row['Trial_Name'], marker)
-        should_use = bool(distutils.util.strtobool(marker_exceptions.get('use_marker', 'True')))
-        if not should_use:
-            log.warning('Skipping marker because it is labeled as DO NOT USE.')
-            plotter_by_marker[marker] = None
-            continue
-        smoothing_params = marker_exceptions.get('smoothing_params', {})
-        frame_ignores = np.asarray(marker_exceptions.get('frame_ignores', []))
+    # add the number of observations
+    props = dict(boxstyle='round', facecolor='none')
+    ax.text(n_obs_pos[0], n_obs_pos[1], 'n=' + str(num_obs), transform=ax.transAxes, fontsize=12,
+            verticalalignment='top', bbox=props)
 
-        # before ignoring frames make a copy of the data so we have it for computation purposes
-        vicon_marker_data = c3d_trial.labeled[marker][endpts[0]:endpts[1]].copy()
-
-        # ignore frames
-        if frame_ignores.size > 0:
-            c3d_trial.labeled[marker][frame_ignores - 1, :] = np.nan
-
-        # filter
-        _, smoothed_pieces = kf_filter_marker_piecewise(c3d_trial, marker, dt, **smoothing_params)
-        smoothed = combine_pieces(smoothed_pieces)
-
-        # now make sure that the smoothed data extends from endpts[0] to endpts[1]
-        smoothed_rectified = np.full((endpts[1]-endpts[0], 3), np.nan)
-        source_start_idx = endpts[0]-smoothed.endpts[0] if smoothed.endpts[0] < endpts[0] else 0
-        source_stop_idx = endpts[1] - smoothed.endpts[0] if smoothed.endpts[1] > endpts[1] \
-            else smoothed.endpts[1] - smoothed.endpts[0]
-        target_start_idx = smoothed.endpts[0] - endpts[0] if smoothed.endpts[0] > endpts[0] else 0
-        target_stop_idx = target_start_idx + (source_stop_idx - source_start_idx)
-        smoothed_rectified[target_start_idx:target_stop_idx, :] = \
-            smoothed.means.pos[source_start_idx:source_stop_idx, :]
-
-        # transform vicon marker data to fluoro CS
-        vmd_fluoro = vec_transform(biplane_trial.subject.f_t_v, vicon_marker_data)[:, :3]
-        smoothed_vmd_fluoro = vec_transform(biplane_trial.subject.f_t_v,
-                                            np.concatenate((smoothed_rectified, np.ones((smoothed_rectified.shape[0], 1))), axis=1))
-        # create plotter
-        plotter_by_marker[marker] = ViconAccuracySmoothingPlotter(row['Trial_Name'], marker, acc_marker_data,
-                                                                  vmd_fluoro, smoothed_vmd_fluoro[:, :3])
-    return plotter_by_marker
-
-
-def trial_plotter(row, subj_dir):
-    trial_name = row['Trial_Name']
-    log.info('Outputting trial %s', trial_name)
-    trial_dir = subj_dir / trial_name
-    trial_dir.mkdir(parents=True, exist_ok=True)
-    trial_pdf_file = subject_dir / (trial_name + '.pdf')
-    plotter_by_marker = row['Vicon_Accuracy_Plotter']
-    with PdfPages(trial_pdf_file) as trial_pdf:
-        for (marker, plotter) in plotter_by_marker.items():
-            figs = plotter.plot()
-            for (fig_num, fig) in enumerate(figs):
-                trial_pdf.savefig(fig)
-                fig.clf()
-                plt.close(fig)
+    return bp
 
 
 if __name__ == '__main__':
@@ -85,12 +38,19 @@ if __name__ == '__main__':
         print('Use -m option to run this library module as a script.')
 
     import sys
+    import pandas as pd
+    import numpy as np
     from pathlib import Path
-    from biplane_tasks.parameters import read_smoothing_exceptions
+    from scipy.stats import ttest_rel
+    from matplotlib.backends.backend_pdf import PdfPages
+    from biplane_tasks.parameters import read_smoothing_exceptions, marker_smoothing_exceptions
     from biplane_kine.database import create_db
     from biplane_kine.database.vicon_accuracy import BiplaneMarkerSubjectEndpts
+    from biplane_kine.graphing.vicon_accuracy_plotters import ViconAccuracySmoothingPlotter
+    from biplane_kine.graphing.common_graph_utils import init_graphing
+    from biplane_kine.smoothing.kf_filtering_helpers import InsufficientDataError, DoNotUseMarkerError
     from biplane_kine.misc.json_utils import Params
-    from matplotlib.backends.backend_pdf import PdfPages
+    from .smoothing_effect_marker import add_c3d_helper, marker_accuracy_diff
     import logging
     from logging.config import fileConfig
 
@@ -106,13 +66,111 @@ if __name__ == '__main__':
     all_exceptions = read_smoothing_exceptions(params.smoothing_exceptions)
     db = create_db(params.accuracy_db_dir, BiplaneMarkerSubjectEndpts)
     add_c3d_helper(db, params.labeled_c3d_dir, params.filled_c3d_dir)
-    db['Vicon_Accuracy_Plotter'] = db.apply(compute_accuracy_diff, axis=1, args=[all_exceptions, db.attrs['dt']])
 
+    # create summary database
+    summary_db = []
+    for (subject_name, trial_name, biplane_trial, c3d_trial) in zip(db['Subject_Name'], db['Trial_Name'],
+                                                                    db['Biplane_Marker_Trial'], db['C3D_Trial']):
+        for marker in biplane_trial.markers:
+            marker_except = marker_smoothing_exceptions(all_exceptions, trial_name, marker)
+            try:
+                bi_vcn_diff = marker_accuracy_diff(biplane_trial, c3d_trial, marker, marker_except, db.attrs['dt'])
+            except InsufficientDataError as e:
+                log.error('Insufficient data for trial {} marker {}: {}'.format(trial_name, marker, e))
+                continue
+            except DoNotUseMarkerError as e:
+                log.error('Marker {} for trial {} should not be used: {}'.format(trial_name, marker, e))
+                continue
+            plotter = ViconAccuracySmoothingPlotter(trial_name, marker, bi_vcn_diff)
+            summary_db.append((subject_name, trial_name, marker, *bi_vcn_diff.raw_rms, bi_vcn_diff.raw_rms_scalar,
+                               *bi_vcn_diff.raw_mae, bi_vcn_diff.raw_mae_scalar, *bi_vcn_diff.raw_max,
+                               bi_vcn_diff.raw_max_scalar, *bi_vcn_diff.smoothed_rms, bi_vcn_diff.smoothed_rms_scalar,
+                               *bi_vcn_diff.smoothed_mae, bi_vcn_diff.smoothed_mae_scalar, *bi_vcn_diff.smoothed_max,
+                               bi_vcn_diff.smoothed_max_scalar, plotter))
+
+    cols = {
+        'Subject_Name': pd.StringDtype(),
+        'Trial_Name': pd.StringDtype(),
+        'Marker': pd.StringDtype(),
+        'Raw_RMS_x': np.float64,
+        'Raw_RMS_y': np.float64,
+        'Raw_RMS_z': np.float64,
+        'Raw_RMS': np.float64,
+        'Raw_MAE_x': np.float64,
+        'Raw_MAE_y': np.float64,
+        'Raw_MAE_z': np.float64,
+        'Raw_MAE': np.float64,
+        'Raw_Max_x': np.float64,
+        'Raw_Max_y': np.float64,
+        'Raw_Max_z': np.float64,
+        'Raw_Max': np.float64,
+        'Smooth_RMS_x': np.float64,
+        'Smooth_RMS_y': np.float64,
+        'Smooth_RMS_z': np.float64,
+        'Smooth_RMS': np.float64,
+        'Smooth_MAE_x': np.float64,
+        'Smooth_MAE_y': np.float64,
+        'Smooth_MAE_z': np.float64,
+        'Smooth_MAE': np.float64,
+        'Smooth_Max_x': np.float64,
+        'Smooth_Max_y': np.float64,
+        'Smooth_Max_z': np.float64,
+        'Smooth_Max': np.float64,
+        'plotter': object
+    }
+    summary_df = pd.DataFrame.from_records(summary_db, columns=list(cols.keys()))
+    summary_df.astype(cols)
+    # for some reason the call above does not respect strings
+    summary_df['Subject_Name'] = summary_df['Subject_Name'].astype(pd.StringDtype())
+    summary_df['Trial_Name'] = summary_df['Trial_Name'].astype(pd.StringDtype())
+    summary_df['Marker'] = summary_df['Marker'].astype(pd.StringDtype())
+    summary_df.set_index(['Trial_Name', 'Marker'], drop=False, inplace=True, verify_integrity=True)
+
+    # create PDFs
     root_path = Path(params.output_dir)
-    init_graphing()
-    # plot markers
-    for subject_name, subject_df in db.groupby('Subject_Name'):
+    for subject_name, subject_df in summary_df.groupby('Subject_Name'):
         log.info('Outputting subject %s', subject_name)
         subject_dir = (root_path / subject_name)
         subject_dir.mkdir(parents=True, exist_ok=True)
-        subject_df.apply(trial_plotter, axis=1, args=[subject_dir])
+        for trial_name, trial_df in subject_df.groupby(level=0):
+            log.info('Outputting trial %s', trial_name)
+            trial_dir = subject_dir / trial_name
+            trial_dir.mkdir(parents=True, exist_ok=True)
+            trial_pdf_file = subject_dir / (trial_name + '.pdf')
+            with PdfPages(trial_pdf_file) as trial_pdf:
+                for marker, plotter in zip(trial_df['Marker'], trial_df['plotter']):
+                    log.info('Outputting marker %s', marker)
+                    figs = plotter.plot()
+                    marker_pdf_file = trial_dir / (marker + '.pdf')
+                    with PdfPages(marker_pdf_file) as marker_pdf:
+                        for fig_num, fig in enumerate(figs):
+                            marker_pdf.savefig(fig)
+                            if fig_num in [0, 2, 4]:
+                                trial_pdf.savefig(fig)
+                            fig.clf()
+                            plt.close(fig)
+
+    # create plot of statistics
+    init_graphing()
+    fig = plt.figure()
+    axs = fig.subplots()
+    summary_data = summary_df[['Raw_RMS', 'Smooth_RMS', 'Raw_MAE', 'Smooth_MAE', 'Raw_Max', 'Smooth_Max']].to_numpy()
+    bp_plt = create_summary_boxplot(axs, summary_data, 'Vicon-Biplane (mm)', ['RMS', 'MAE', 'Max'], ['Raw', 'Smoothed'],
+                                    (0.92, 1.0))
+
+    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
+    fig.suptitle('Vicon Marker - Biplane \n (Raw vs Smoothed)', fontsize=12, fontweight='bold')
+    plt.subplots_adjust(top=0.92)
+    legend = fig.legend(bp_plt['boxes'][0:2], ['Raw', 'Smoothed'], loc='upper left', bbox_to_anchor=(0.01, 1.00),
+                        fontsize=11, ncol=2, columnspacing=0.5, handletextpad=0.3, handlelength=1.0)
+    legend.set_draggable(True)
+
+    plt.show()
+
+    # print p-values
+    _, pvalue_rms = ttest_rel(summary_df['Raw_RMS'].to_numpy(), summary_df['Smooth_RMS'].to_numpy())
+    _, pvalue_mae = ttest_rel(summary_df['Raw_MAE'].to_numpy(), summary_df['Smooth_MAE'].to_numpy())
+    _, pvalue_max = ttest_rel(summary_df['Raw_Max'].to_numpy(), summary_df['Smooth_Max'].to_numpy())
+    print('p-value of paired t-test for {}: {:.5f}'.format('RMS', pvalue_rms))
+    print('p-value of paired t-test for {}: {:.5f}'.format('MAE', pvalue_mae))
+    print('p-value of paired t-test for {}: {:.5f}'.format('Max', pvalue_max))

@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from biplane_kine.graphing.common_graph_utils import MplStyle, make_interactive
+from biplane_kine.graphing.common_graph_utils import make_interactive
 from biplane_kine.graphing.smoothing_graph_utils import marker_graph_init, marker_graph_add, marker_graph_title
 from biplane_kine.graphing.vicon_accuracy_graph_utils import marker_diff_graph
 
@@ -39,8 +39,8 @@ class ViconAccuracyPlotter:
         fig = plt.figure(num=fig_num)
         ax = fig.subplots(3, 1, sharex=True)
         lines_vicon = marker_graph_init(ax, getattr(self, vicon_field), 'Distance (mm)', self.vicon_frames,
-                                        MplStyle('limegreen', marker='.', lw=1, ms=2))
-        lines_biplane = marker_graph_add(ax, self.biplane_data, self.vicon_frames, style=MplStyle('indigo', marker='.'))
+                                        color='limegreen', marker='.', lw=1, ms=2)
+        lines_biplane = marker_graph_add(ax, self.biplane_data, self.vicon_frames, color='indigo', marker='.')
 
         fig.legend((lines_biplane[0], lines_vicon[0]), ('Biplane', vicon_type + ' Vicon'), 'upper right', ncol=3,
                    columnspacing=0.3, handlelength=1.0)

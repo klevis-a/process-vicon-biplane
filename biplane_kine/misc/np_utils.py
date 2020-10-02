@@ -36,5 +36,13 @@ def rms(vec, axis=0):
     return np.sqrt(np.mean(np.square(vec), axis=axis))
 
 
+def nanrms(vec, axis=0):
+    return np.sqrt(np.nanmean(np.square(vec), axis=axis))
+
+
 def mae(vec, axis=0):
     return np.mean(np.absolute(vec), axis=axis)
+
+
+def nanmae(vec, axis=0):
+    return np.nanmean(np.absolute(vec), axis=axis)
