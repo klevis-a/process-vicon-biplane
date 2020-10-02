@@ -35,11 +35,11 @@ def trial_plotter(trial, dt, subj_dir, all_smoothing_except):
                                                         dt)
                 except InsufficientDataError as e:
                     create_and_save_error_figure(marker + ' Insufficient Data', trial_pdf)
-                    log.warning('Skipping marker {} for trial {}} because: {}'.format(marker, trial.trial_name, e))
+                    log.warning('Skipping marker {} for trial {} because: {}'.format(marker, trial.trial_name, e))
                     continue
                 except DoNotUseMarkerError as e:
                     create_and_save_error_figure(marker + ' SHOULD NOT USE', trial_pdf)
-                    log.warning('Skipping marker {} for trial {}} because: {}'.format(marker, trial.trial_name, e))
+                    log.warning('Skipping marker {} for trial {} because: {}'.format(marker, trial.trial_name, e))
                     continue
                 marker_plotter = SmoothingOutputPlotter(trial.trial_name, marker, raw, filled, filtered, smoothed,
                                                         trial.vicon_endpts)
