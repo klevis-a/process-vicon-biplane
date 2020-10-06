@@ -36,7 +36,7 @@ la_avg_time = la_total_time / n
 
 t0 = time.time()
 for i in range(n):
-    extended_dot_einsum(vs1_r[i], vs1_r[i])
+    np.sqrt(extended_dot_einsum(vs1_r[i], vs1_r[i]))
 t1 = time.time()
 einsum_total_time = (t1-t0)*1000
 einsum_avg_time = einsum_total_time / n
