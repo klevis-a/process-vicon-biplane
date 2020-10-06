@@ -15,8 +15,8 @@ class BiplaneMarkerTrial(TrialDescriptor):
         super().__init__(trial_dir_path=self.trial_dir_path, **kwargs)
 
         self.subject = subject
-        self._marker_files = {file.stem: file for file in self.trial_dir_path.iterdir() if
-                              (file.stem in MARKERS)}
+        self._marker_files = {file.stem.split('_')[-1]: file for file in self.trial_dir_path.iterdir() if
+                              (file.stem.split('_')[-1] in MARKERS)}
         self.markers = self._marker_files.keys()
 
     @staticmethod
@@ -41,16 +41,17 @@ class BiplaneMarkerTrial(TrialDescriptor):
 
 
 class BiplaneMarkerTrialEndpts(BiplaneMarkerTrial, ViconEndpts):
-    def __init__(self, trial_dir, subject):
+    def __init__(self, trial_dir, subject, **kwargs):
         trial_dir_path = trial_dir if isinstance(trial_dir, Path) else Path(trial_dir)
-        super().__init__(trial_dir=trial_dir_path, subject=subject, endpts_file=trial_dir_path / 'vicon_endpts.csv')
+        super().__init__(trial_dir=trial_dir_path, subject=subject,
+                         endpts_file=lambda: trial_dir_path / (self.trial_name + '_vicon_endpts.csv'), **kwargs)
 
 
 class BiplaneMarkerSubjectEndpts(SubjectDescriptor, ViconCSTransform):
     def __init__(self, subj_dir, **kwargs):
         self.subject_dir_path = subj_dir if isinstance(subj_dir, Path) else Path(subj_dir)
-        super().__init__(subject_dir_path=self.subject_dir_path, f_t_v_file=self.subject_dir_path / 'F_T_V.csv',
-                         **kwargs)
+        super().__init__(subject_dir_path=self.subject_dir_path,
+                         f_t_v_file=lambda: self.subject_dir_path / (self.subject_name + '_F_T_V.csv'), **kwargs)
         self.trials = [BiplaneMarkerTrialEndpts(folder, self) for folder in self.subject_dir_path.iterdir()
                        if folder.is_dir()]
 

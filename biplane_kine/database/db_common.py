@@ -19,9 +19,12 @@ def trial_descriptor_df(subject_name, trials):
 
 class ViconEndpts:
     def __init__(self, endpts_file, **kwargs):
-        super().__init__(**kwargs)
-        self.endpts_file = endpts_file
+        if callable(endpts_file):
+            self.endpts_file = endpts_file()
+        else:
+            self.endpts_file = endpts_file
         assert (self.endpts_file.is_file())
+        super().__init__(**kwargs)
 
     @lazy
     def vicon_endpts(self):
@@ -36,10 +39,10 @@ class ViconEndpts:
 
 class TrialDescriptor:
     def __init__(self, trial_dir_path, **kwargs):
-        super().__init__(**kwargs)
         # now create trial identifiers
         self.trial_name = trial_dir_path.stem
         self.subject_short, self.activity, self.trial_number = TrialDescriptor.parse_trial_name(self.trial_name)
+        super().__init__(**kwargs)
 
     @staticmethod
     def parse_trial_name(trial_name):
@@ -52,16 +55,19 @@ class TrialDescriptor:
 
 class SubjectDescriptor:
     def __init__(self, subject_dir_path, **kwargs):
-        super().__init__(**kwargs)
         # subject identifier
         self.subject_name = subject_dir_path.stem
+        super().__init__(**kwargs)
 
 
 class ViconCSTransform:
     def __init__(self, f_t_v_file, **kwargs):
-        super().__init__(**kwargs)
-        self.f_t_v_file = f_t_v_file
+        if callable(f_t_v_file):
+            self.f_t_v_file = f_t_v_file()
+        else:
+            self.f_t_v_file = f_t_v_file
         assert(self.f_t_v_file.is_file())
+        super().__init__(**kwargs)
 
     @lazy
     def f_t_v_data(self):
