@@ -41,7 +41,7 @@ if __name__ == '__main__':
     from pathlib import Path
     import distutils.util
     from biplane_kine.database import create_db
-    from biplane_kine.database.vicon_csv import ViconCsvSubject
+    from biplane_kine.database.biplane_vicon_db import ViconCsvSubject
     from biplane_kine.graphing.smoothing_plotters import SmoothingOutputPlotter
     from biplane_tasks.parameters import smoothing_exceptions_for_marker
     from biplane_kine.smoothing.kf_filtering_helpers import InsufficientDataError, DoNotUseMarkerError

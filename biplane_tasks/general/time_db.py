@@ -9,7 +9,7 @@ if __name__ == '__main__':
     import sys
     from biplane_kine.misc.file_utils import pretty_size
     from biplane_kine.database import create_db
-    from biplane_kine.database.vicon_csv import ViconCsvSubject
+    from biplane_kine.database.biplane_vicon_db import ViconCsvSubject
     from biplane_kine.misc.json_utils import Params
 
     process = psutil.Process(os.getpid())

@@ -7,7 +7,7 @@ if __name__ == '__main__':
     import multiprocessing as mp
     from functools import partial
     from biplane_kine.database import create_db
-    from biplane_kine.database.vicon_csv import ViconCsvSubject
+    from biplane_kine.database.biplane_vicon_db import ViconCsvSubject
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.common_graph_utils import init_graphing
     from ..parameters import read_smoothing_exceptions
