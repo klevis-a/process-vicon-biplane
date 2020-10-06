@@ -28,7 +28,7 @@ t = t[..., np.newaxis]
 
 matmul_res = cs_transform_mats_vecs_ht(ms, vs)
 rt_res = cs_transform_mats_vecs_rot_trans(r, t, vs[:, :3, :])
-assert(np.allclose(matmul_res[:, :3, :], rt_res))
+assert(np.array_equal(matmul_res[:, :3, :], rt_res))
 
 n = 1000
 

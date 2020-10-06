@@ -27,8 +27,8 @@ vs2 = np.arange(10).reshape((10, 1)) + np.arange(3)
 matmul_res = extended_dot_matmul(vs1, vs2)
 einsum_res = extended_dot_einsum(vs1, vs2)
 sum_multiply_res = extended_dot_sum_multiply(vs1, vs2)
-assert(np.allclose(matmul_res, einsum_res))
-assert(np.allclose(matmul_res, sum_multiply_res))
+assert(np.array_equal(matmul_res, einsum_res))
+assert(np.array_equal(matmul_res, sum_multiply_res))
 
 n = 1000
 

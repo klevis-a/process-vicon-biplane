@@ -30,8 +30,8 @@ t2 = t2[..., np.newaxis]
 
 matmul_res = cs_transform_mats_mats_ht(ms1, ms2)
 r_res, t_res = cs_transform_mats_mats_rot_trans(r1, t1, r2, t2)
-assert(np.allclose(matmul_res[:, :3, :3], r_res))
-assert(np.allclose(matmul_res[:, :3, 3][..., np.newaxis], t_res))
+assert(np.array_equal(matmul_res[:, :3, :3], r_res))
+assert(np.array_equal(matmul_res[:, :3, 3][..., np.newaxis], t_res))
 
 n = 1000
 

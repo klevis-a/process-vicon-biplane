@@ -21,7 +21,7 @@ vs1 = np.arange(10).reshape((10, 1)) + np.arange(3)
 
 einsum_res = np.sqrt(extended_dot_einsum(vs1, vs1))
 la_res = la_norm(vs1)
-assert(np.allclose(einsum_res, la_res))
+assert(np.array_equal(einsum_res, la_res))
 
 n = 1000
 

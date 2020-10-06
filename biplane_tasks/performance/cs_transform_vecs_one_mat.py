@@ -22,7 +22,7 @@ vs = np.arange(num_el).reshape((num_el, 1)) + np.arange(4) + 0.1
 
 matmul_res = cs_transform_vecs_one_mat_matmul(m, vs)
 einsum_res = cs_transform_vecs_one_mat_einsum(m, vs)
-assert(np.allclose(matmul_res, einsum_res))
+assert(np.array_equal(matmul_res, einsum_res))
 
 n = 1000
 

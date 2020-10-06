@@ -21,7 +21,7 @@ ms2 = np.stack([np.eye(4) * i for i in range(1, 11)], axis=0)
 
 matmul_res = cs_transform_mats_mats_matmul(ms1, ms2)
 einsum_res = cs_transform_mats_mats_einsum(ms1, ms2)
-assert(np.allclose(matmul_res, einsum_res))
+assert(np.array_equal(matmul_res, einsum_res))
 
 n = 1000
 
