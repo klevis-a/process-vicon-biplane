@@ -5,7 +5,7 @@ from scipy.spatial.transform import Rotation
 from ..kinematics.cs import ht_r
 
 ACTIVITY_TYPES = ['CA', 'SA', 'FE', 'ERa90', 'ERaR', 'IRaB', 'IRaM', 'Static', 'WCA', 'WSA', 'WFE']
-MARKERS = ['T10', 'T5', 'C7', 'STRN', 'CLAV', 'LSHO', 'LCLAV', 'RCLAV', 'RSH0', 'RACRM', 'RSPIN', 'RANGL', 'RUPAA',
+MARKERS = ['STRN', 'C7', 'T5', 'T10', 'LSHO', 'LCLAV', 'CLAV', 'RCLAV', 'RSH0', 'RACRM', 'RANGL', 'RSPIN', 'RUPAA',
            'RUPAB', 'RUPAC', 'RUPAD', 'RELB', 'RFRM', 'RWRA', 'RWRB', 'RHNDA', 'RHNDB', 'RHNDC', 'RHNDD']
 
 
