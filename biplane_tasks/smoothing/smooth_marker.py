@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
     # ready db
     root_path = Path(params.output_dir)
-    db = create_db(params.vicon_csv_dir, ViconCsvSubject)
+    db = create_db(params.biplane_vicon_db_dir, ViconCsvSubject)
 
     # select trial
     trial_row = db.loc[params.trial_name]

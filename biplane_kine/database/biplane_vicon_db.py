@@ -16,12 +16,12 @@ class ViconCsvTrial(TrialDescriptor, ViconEndpts):
 
     def __init__(self, trial_dir, **kwargs):
         self.trial_dir_path = trial_dir if isinstance(trial_dir, Path) else Path(trial_dir)
-        super().__init__(trial_dir_path=self.trial_dir_path, endpts_file=(self.trial_dir_path / 'vicon_endpts.csv'),
-                         **kwargs)
+        super().__init__(trial_dir_path=self.trial_dir_path,
+                         endpts_file=lambda: self.trial_dir_path / (self.trial_name + '_vicon_endpts.csv'), **kwargs)
 
         # file paths
-        self.vicon_csv_file_labeled = self.trial_dir_path / (self.trial_dir_path.name + '.csv')
-        self.vicon_csv_file_filled = self.trial_dir_path / (self.trial_dir_path.name + '_filled.csv')
+        self.vicon_csv_file_labeled = self.trial_dir_path / (self.trial_name + '_vicon_labeled.csv')
+        self.vicon_csv_file_filled = self.trial_dir_path / (self.trial_name + '_vicon_filled.csv')
 
         # make sure the files are actually there
         assert (self.vicon_csv_file_labeled.is_file())
@@ -52,7 +52,8 @@ class ViconCsvSubject(SubjectDescriptor):
     def __init__(self, subj_dir, **kwargs):
         self.subject_dir_path = subj_dir if isinstance(subj_dir, Path) else Path(subj_dir)
         super().__init__(subject_dir_path=self.subject_dir_path, **kwargs)
-        self.trials = [ViconCsvTrial(folder) for folder in self.subject_dir_path.iterdir() if folder.is_dir()]
+        self.trials = [ViconCsvTrial(folder) for folder in self.subject_dir_path.iterdir() if (folder.is_dir() and
+                       folder.stem != 'Static')]
 
     @lazy
     def subject_df(self):

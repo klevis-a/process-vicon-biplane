@@ -34,7 +34,6 @@ if __name__ == '__main__':
     from biplane_kine.graphing.common_graph_utils import init_graphing
     from biplane_kine.database.c3d_helper import C3DSubjectEndpts
     from biplane_kine.smoothing.kf_filtering_helpers import InsufficientDataError, DoNotUseMarkerError
-    from biplane_kine.misc.python_utils import partialclass
     from .smooth_marker import marker_plotter
     import logging
     from logging.config import fileConfig
@@ -48,10 +47,14 @@ if __name__ == '__main__':
     log = logging.getLogger(params.logger_name)
 
     # ready db
+    class C3DSubjectEndptsPrePop(C3DSubjectEndpts):
+        def __init__(self, subj_dir):
+            super().__init__(subj_dir, labeled_base_dir=params.labeled_c3d_dir, filled_base_dir=params.filled_c3d_dir,
+                             c3d_trial_cls=C3DTrialEndptsNonHom)
+
+
     root_path = Path(params.output_dir)
-    db = create_db(params.vicon_csv_dir,
-                   partialclass(C3DSubjectEndpts, labeled_base_dir=params.labeled_c3d_dir,
-                                filled_base_dir=params.filled_c3d_dir, c3d_trial_cls=C3DTrialEndptsNonHom))
+    db = create_db(params.biplane_vicon_db_dir, C3DSubjectEndptsPrePop)
 
     # select trial
     trial_row = db.loc[params.trial_name]

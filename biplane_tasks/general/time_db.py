@@ -18,7 +18,7 @@ if __name__ == '__main__':
     start = time.time()
     config_dir = Path(sys.argv[1])
     params = Params.get_params(config_dir / 'parameters.json')
-    db = create_db(params.vicon_csv_dir, ViconCsvSubject)
+    db = create_db(params.biplane_vicon_db_dir, ViconCsvSubject)
     end = time.time()
     print(end - start)
 

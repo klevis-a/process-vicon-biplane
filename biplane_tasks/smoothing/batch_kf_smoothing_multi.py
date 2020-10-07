@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
     # ready db
     root_path = Path(params.output_dir)
-    db = create_db(params.vicon_csv_dir, ViconCsvSubject)
+    db = create_db(params.biplane_vicon_db_dir, ViconCsvSubject)
     init_graphing()
     all_exceptions = read_smoothing_exceptions(params.smoothing_exceptions)
 

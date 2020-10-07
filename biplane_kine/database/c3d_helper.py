@@ -55,9 +55,9 @@ class C3DTrial(TrialDescriptor):
 
 
 class C3DTrialEndpts(C3DTrial, ViconEndpts):
-    def __init__(self, labeled_c3d_path, filled_c3d_path, endpts_file):
+    def __init__(self, labeled_c3d_path, filled_c3d_path, endpts_path):
         super().__init__(labeled_c3d_path=labeled_c3d_path, filled_c3d_path=filled_c3d_path,
-                         endpts_file=Path(endpts_file))
+                         endpts_file=lambda: endpts_path / (self.trial_name + '_vicon_endpts.csv'))
 
 
 class C3DSubjectEndpts(SubjectDescriptor):
@@ -72,7 +72,7 @@ class C3DSubjectEndpts(SubjectDescriptor):
         # trials
         self.trials = [c3d_trial_cls(self.labeled_base_path / self.subject_name / (trial_dir.stem + '.c3d'),
                                      self.filled_base_path / self.subject_name / (trial_dir.stem + '.c3d'),
-                                     trial_dir / 'vicon_endpts.csv')
+                                     endpts_path=trial_dir)
                        for trial_dir in self.subject_dir_path.iterdir()
                        if (trial_dir.is_dir() and trial_dir.name != 'Static')]
 
