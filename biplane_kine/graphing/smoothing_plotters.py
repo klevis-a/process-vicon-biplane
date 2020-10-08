@@ -7,34 +7,35 @@ from biplane_kine.graphing.common_graph_utils import make_interactive
 
 
 class LabeledMarkerPloter:
-    def __init__(self, trial, marker_name):
-        self.trial = trial
+    def __init__(self, trial_name, marker_name, marker_pos_labeled, vicon_endpts):
+        self.trial_name = trial_name
         self.marker_name = marker_name
-        self.marker_pos_labeled = self.trial.labeled[marker_name]
+        self.marker_pos_labeled = marker_pos_labeled
+        self.vicon_endpts = vicon_endpts
         self.frame_nums = np.arange(self.marker_pos_labeled.shape[0]) + 1
 
     def plot(self):
         fig = plt.figure(num=0)
         ax = fig.subplots(3, 1, sharex=True)
         marker_graph_init(ax, self.marker_pos_labeled, 'Pos (mm)', x_data=self.frame_nums, color='blue')
-        add_vicon_start_stop(ax, self.trial.vicon_endpts[0] + 1, self.trial.vicon_endpts[1])
-        marker_graph_title(fig, self.trial.trial_name + ' ' + self.marker_name)
+        add_vicon_start_stop(ax, self.vicon_endpts[0] + 1, self.vicon_endpts[1])
+        marker_graph_title(fig, self.trial_name + ' ' + self.marker_name)
         make_interactive()
         return fig
 
 
 class LabeledFilledMarkerPlotter(LabeledMarkerPloter):
-    def __init__(self, trial, marker_name):
-        super().__init__(trial, marker_name)
-        self.marker_pos_filled = self.trial.filled[marker_name]
+    def __init__(self, trial_name, marker_name, marker_pos_labeled, marker_pos_filled, vicon_endpts):
+        super().__init__(trial_name, marker_name, marker_pos_labeled, vicon_endpts)
+        self.marker_pos_filled = marker_pos_filled
 
     def plot(self):
         fig = plt.figure(num=0)
         ax = fig.subplots(3, 1, sharex=True)
         marker_graph_init(ax, self.marker_pos_filled, 'Pos (mm)', x_data=self.frame_nums, color='red')
         marker_graph_add(ax, self.marker_pos_labeled, self.frame_nums, color='indigo', marker='.')
-        add_vicon_start_stop(ax, self.trial.vicon_endpts[0] + 1, self.trial.vicon_endpts[1])
-        marker_graph_title(fig, self.trial.trial_name + ' ' + self.marker_name)
+        add_vicon_start_stop(ax, self.vicon_endpts[0] + 1, self.vicon_endpts[1])
+        marker_graph_title(fig, self.trial_name + ' ' + self.marker_name)
         make_interactive()
         return [fig]
 

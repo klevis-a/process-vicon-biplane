@@ -15,7 +15,8 @@ def trial_plotter(trial, subj_dir):
         for marker in MARKERS:
             if marker in trial.vicon_csv_data_labeled.columns:
                 log.info('Outputting marker %s', marker)
-                marker_plotter = LabeledFilledMarkerPlotter(trial, marker)
+                marker_plotter = LabeledFilledMarkerPlotter(trial.trial_name, marker, trial.labeled[marker],
+                                                            trial.filled[marker], trial.vicon_endpts)
                 figs = marker_plotter.plot()
                 for fig in figs:
                     trial_pdf.savefig(fig)
