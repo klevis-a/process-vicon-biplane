@@ -48,8 +48,10 @@ class BiplaneViconDiff:
 
 
 class BiplaneViconSmoothDiff(BiplaneViconDiff):
-    def __init__(self, biplane_marker_data, vicon_endpts, f_t_v, c3d_data_labeled, c3d_data_filled, marker_except, dt):
+    def __init__(self, biplane_marker_data, vicon_endpts, f_t_v, c3d_data_labeled, c3d_data_filled, marker_except, dt,
+                 use_filled_portion=True):
         super().__init__(biplane_marker_data, vicon_endpts, f_t_v, c3d_data_labeled)
+        self.use_filled_portion = use_filled_portion
         # smooth
         _, _, _, smoothed = \
             piecewise_filter_with_exception(marker_except, c3d_data_labeled, c3d_data_filled, dt)
@@ -69,7 +71,12 @@ class BiplaneViconSmoothDiff(BiplaneViconDiff):
 
     @lazy
     def smoothed_diff(self):
-        return self.smoothed_vmd_fluoro[self.biplane_marker_data.indices, :] - self.biplane_marker_data.data
+        if self.use_filled_portion:
+            return self.smoothed_vmd_fluoro[self.biplane_marker_data.indices, :] - self.biplane_marker_data.data
+        else:
+            temp_diff = self.smoothed_vmd_fluoro[self.biplane_marker_data.indices, :] - self.biplane_marker_data.data
+            temp_diff[np.isnan(self.vmd_fluoro[self.biplane_marker_data.indices, 0]), :] = np.nan
+            return temp_diff
 
     @lazy
     def smoothed_diff_scalar(self):

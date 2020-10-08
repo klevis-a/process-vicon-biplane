@@ -13,9 +13,10 @@ def add_c3d_helper(db_df, vicon_labeled_path, vicon_filled_path):
     db_df['C3D_Trial'] = db_df.apply(create_c3d_helper, axis=1, args=[vicon_labeled_path, vicon_filled_path])
 
 
-def marker_accuracy_diff(biplane_trial, c3d_trial, marker, marker_except, dt):
+def marker_accuracy_diff(biplane_trial, c3d_trial, marker, marker_except, dt, use_filled_portion=True):
     return BiplaneViconSmoothDiff(biplane_trial[marker], biplane_trial.vicon_endpts, biplane_trial.subject.f_t_v,
-                                  c3d_trial.labeled[marker], c3d_trial.filled[marker], marker_except, dt)
+                                  c3d_trial.labeled[marker], c3d_trial.filled[marker], marker_except, dt,
+                                  use_filled_portion)
 
 
 if __name__ == '__main__':
@@ -23,6 +24,7 @@ if __name__ == '__main__':
         print('Use -m option to run this library module as a script.')
 
     import sys
+    import distutils.util
     import matplotlib.pyplot as plt
     from biplane_tasks.parameters import smoothing_exceptions_for_marker
     from biplane_kine.database import create_db
@@ -54,7 +56,8 @@ if __name__ == '__main__':
     # compute differences
     try:
         raw_smoothed_diff = marker_accuracy_diff(trial_row['Biplane_Marker_Trial'], trial_row['C3D_Trial'],
-                                                 params.marker_name, marker_exceptions, db.attrs['dt'])
+                                                 params.marker_name, marker_exceptions, db.attrs['dt'],
+                                                 bool(distutils.util.strtobool(params.use_filled_portion)))
     except InsufficientDataError as e:
         log.error('Insufficient data for trial {} marker {}: {}'.format(params.trial_name, params.marker_name, e))
         sys.exit(1)

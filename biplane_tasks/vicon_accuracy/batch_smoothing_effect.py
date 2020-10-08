@@ -38,6 +38,7 @@ if __name__ == '__main__':
         print('Use -m option to run this library module as a script.')
 
     import sys
+    import distutils.util
     import pandas as pd
     import numpy as np
     from pathlib import Path
@@ -74,7 +75,8 @@ if __name__ == '__main__':
         for marker in biplane_trial.markers:
             marker_except = marker_smoothing_exceptions(all_exceptions, trial_name, marker)
             try:
-                bi_vcn_diff = marker_accuracy_diff(biplane_trial, c3d_trial, marker, marker_except, db.attrs['dt'])
+                bi_vcn_diff = marker_accuracy_diff(biplane_trial, c3d_trial, marker, marker_except, db.attrs['dt'],
+                                                   bool(distutils.util.strtobool(params.use_filled_portion)))
             except InsufficientDataError as e:
                 log.error('Insufficient data for trial {} marker {}: {}'.format(trial_name, marker, e))
                 continue
@@ -126,29 +128,30 @@ if __name__ == '__main__':
     summary_df['Marker'] = summary_df['Marker'].astype(pd.StringDtype())
     summary_df.set_index(['Trial_Name', 'Marker'], drop=False, inplace=True, verify_integrity=True)
 
-    # create PDFs
-    root_path = Path(params.output_dir)
-    for subject_name, subject_df in summary_df.groupby('Subject_Name'):
-        log.info('Outputting subject %s', subject_name)
-        subject_dir = (root_path / subject_name)
-        subject_dir.mkdir(parents=True, exist_ok=True)
-        for trial_name, trial_df in subject_df.groupby(level=0):
-            log.info('Outputting trial %s', trial_name)
-            trial_dir = subject_dir / trial_name
-            trial_dir.mkdir(parents=True, exist_ok=True)
-            trial_pdf_file = subject_dir / (trial_name + '.pdf')
-            with PdfPages(trial_pdf_file) as trial_pdf:
-                for marker, plotter in zip(trial_df['Marker'], trial_df['plotter']):
-                    log.info('Outputting marker %s', marker)
-                    figs = plotter.plot()
-                    marker_pdf_file = trial_dir / (marker + '.pdf')
-                    with PdfPages(marker_pdf_file) as marker_pdf:
-                        for fig_num, fig in enumerate(figs):
-                            marker_pdf.savefig(fig)
-                            if fig_num in [0, 2, 4]:
-                                trial_pdf.savefig(fig)
-                            fig.clf()
-                            plt.close(fig)
+    if bool(distutils.util.strtobool(params.print_to_file)):
+        # create PDFs
+        root_path = Path(params.output_dir)
+        for subject_name, subject_df in summary_df.groupby('Subject_Name'):
+            log.info('Outputting subject %s', subject_name)
+            subject_dir = (root_path / subject_name)
+            subject_dir.mkdir(parents=True, exist_ok=True)
+            for trial_name, trial_df in subject_df.groupby(level=0):
+                log.info('Outputting trial %s', trial_name)
+                trial_dir = subject_dir / trial_name
+                trial_dir.mkdir(parents=True, exist_ok=True)
+                trial_pdf_file = subject_dir / (trial_name + '.pdf')
+                with PdfPages(trial_pdf_file) as trial_pdf:
+                    for marker, plotter in zip(trial_df['Marker'], trial_df['plotter']):
+                        log.info('Outputting marker %s', marker)
+                        figs = plotter.plot()
+                        marker_pdf_file = trial_dir / (marker + '.pdf')
+                        with PdfPages(marker_pdf_file) as marker_pdf:
+                            for fig_num, fig in enumerate(figs):
+                                marker_pdf.savefig(fig)
+                                if fig_num in [0, 2, 4]:
+                                    trial_pdf.savefig(fig)
+                                fig.clf()
+                                plt.close(fig)
 
     # create plot of statistics
     init_graphing()
