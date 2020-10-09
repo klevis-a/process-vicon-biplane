@@ -1,9 +1,12 @@
+"""This module contains various useful numpy utilities."""
+
 import numpy as np
+from typing import Tuple
 
 
 # written by alimanfoo and retrieved from:
 # https://gist.github.com/alimanfoo/c5977e87111abe8127453b21204c1065
-def find_runs(x):
+def find_runs(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Find runs of consecutive items in an array."""
 
     # ensure array
@@ -32,17 +35,21 @@ def find_runs(x):
         return run_values, run_starts, run_lengths
 
 
-def rms(vec, axis=0):
+def rms(vec: np.ndarray, axis: int = 0) -> np.ndarray:
+    """Compute the RMS of vec."""
     return np.sqrt(np.mean(np.square(vec), axis=axis))
 
 
-def nanrms(vec, axis=0):
+def nanrms(vec: np.ndarray, axis: int = 0) -> np.ndarray:
+    """Compute the RMS of vec, ignoring NaN values."""
     return np.sqrt(np.nanmean(np.square(vec), axis=axis))
 
 
-def mae(vec, axis=0):
+def mae(vec: np.ndarray, axis: int = 0) -> np.ndarray:
+    """Compute the MAE (mean absolute error) of vec."""
     return np.mean(np.absolute(vec), axis=axis)
 
 
-def nanmae(vec, axis=0):
+def nanmae(vec: np.ndarray, axis=0) -> np.ndarray:
+    """Compute the MAE (mean absolute error) of vec, ignoring NaN values."""
     return np.nanmean(np.absolute(vec), axis=axis)

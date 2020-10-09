@@ -1,7 +1,14 @@
+"""This module contains various useful generic Python utilities."""
+
+from typing import Callable, Any
+
+
 class NestedContainer:
-    def __init__(self, nested_container, get_item_method):
+    """A class that is a descriptor, which allows access to items in the nested container via the supplied
+    get_item_method."""
+    def __init__(self, nested_container: Any, get_item_method: Callable):
         self._nested_container = nested_container
         self._get_item_method = get_item_method
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: Any) -> Any:
         return self._get_item_method(self._nested_container, item)

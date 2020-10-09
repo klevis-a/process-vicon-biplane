@@ -1,63 +1,165 @@
-from collections import namedtuple
+"""This module contains utilities for performing Kalman filtering/smoothing of marker data."""
+
+from typing import NamedTuple, List, Tuple, Union
+from collections.abc import Sequence
 import numpy as np
 import simdkalman
 from filterpy.common.discretization import Q_discrete_white_noise
 from filterpy.kalman import KalmanFilter
 
 
-class LinearKF:
-    _CovDiagTerms = ['pos', 'vel', 'acc']
-    _CovOffDiagTerms = ['pos_vel', 'pos_acc', 'vel_acc']
-    _AllTerms = _CovDiagTerms + _CovOffDiagTerms
-    _CovIndices = [(0, 0), (1, 1), (2, 2), (0, 1), (0, 2), (1, 2)]
-    CovarianceVec = namedtuple('CovarianceVec', _AllTerms)
-    CorrVec = namedtuple('CorrVec', _CovOffDiagTerms)
-    StateMeans = namedtuple('FilterOutput', ['pos', 'vel', 'acc'])
+class StateMeans(NamedTuple):
+    """Contains the position, velocity, and acceleration of a trajectory (whether raw, filtered, or smoothed).
 
-    @classmethod
-    def extract_covariances(cls, covs):
-        # here we iterate over each variance/covariance pos(0), vel(1), acc(2), pos_vel(3), pos_acc(4), vel_acc(5)
-        covariances = []
-        for cov_idx in LinearKF._CovIndices:
-            covariance = np.stack([cov[:, cov_idx[0], cov_idx[1]] for cov in covs], axis=-1)
-            covariances.append(covariance)
-        return covariances
-
-    @classmethod
-    def extract_corrs(cls, covariances):
-        correlations = []
-        for corr_name in LinearKF._CovOffDiagTerms:
-            corr_name_split = corr_name.split('_')
-            first_term = corr_name_split[0]
-            second_term = corr_name_split[1]
-            cov = getattr(covariances, corr_name)
-            var_first_term = getattr(covariances, first_term)
-            var_second_term = getattr(covariances, second_term)
-            correlation = np.divide(cov, np.multiply(np.sqrt(var_first_term), np.sqrt(var_second_term)))
-            correlations.append(correlation)
-        return correlations
-
-    @classmethod
-    def extract_means(cls, means):
-        # here we iterate over each derivative (0, 1, 2)
-        output = []
-        for i in range(3):
-            mean_data = np.stack([mean[:, i] for mean in means], axis=-1)
-            output.append(mean_data)
-        return output
+    Attributes
+    ----------
+    pos: numpy.ndarray, (N, 3)
+        Marker position.
+    vel: numpy.ndarray, (N, 3)
+        Marker velocity.
+    acc: numpy.ndarray, (N, 3)
+        Marker acceleration.
+    """
+    pos: np.ndarray
+    vel: np.ndarray
+    acc: np.ndarray
 
 
-class LinearKF1DFilterPy(LinearKF):
-    # this class has not gotten updated to conform to the new framework but I have left it here so the interaction with
-    # FilterPy is documented somewhere
+class CovarianceVec(NamedTuple):
+    """Contains the elements of a (3x3) symmetric covariance matrix in a 6-element vector for a trajectory.
+
+    Attributes
+    ----------
+    pos: numpy.ndarray, (N, 3)
+        Marker position variance for each spatial dimension over the course of the trajectory.
+    vel: numpy.ndarray, (N, 3)
+        Marker velocity variance for each spatial dimension over the course of the trajectory.
+    acc: numpy.ndarray, (N, 3)
+        Marker acceleration variance for each spatial dimension over the course of the trajectory.
+    pos_vel: numpy.ndarray, (N, 3)
+        Marker position/velocity covariance for each spatial dimension over the course of the trajectory.
+    pos_acc: numpy.ndarray, (N, 3)
+        Marker position/acceleration covariance for each spatial dimension over the course of the trajectory.
+    vel_acc: numpy.ndarray, (N, 3)
+        Marker velocity/acceleration covariance for each spatial dimension over the course of the trajectory.
+    """
+    pos: np.ndarray
+    vel: np.ndarray
+    acc: np.ndarray
+    pos_vel: np.ndarray
+    pos_acc: np.ndarray
+    vel_acc: np.ndarray
+
+
+class CorrVec(NamedTuple):
+    """Contains the correlation coefficients of position/velocity, position/acceleration, and velocity/acceleration for
+    a trajectory.
+
+    Attributes
+    ----------
+    pos_vel: numpy.ndarray, (N, 3)
+        Marker position/velocity correlation for each spatial dimension over the course of the trajectory.
+    pos_acc: numpy.ndarray, (N, 3)
+        Marker position/acceleration correlation for each spatial dimension over the course of the trajectory.
+    vel_acc: numpy.ndarray, (N, 3)
+        Marker velocity/acceleration correlation for each spatial dimension over the course of the trajectory.
+    """
+    pos_vel: np.ndarray
+    pos_acc: np.ndarray
+    vel_acc: np.ndarray
+
+
+class FilterStep(NamedTuple):
+    """Contains all the data associated with a filtering or smoothing step.
+
+    For ease and consistency, the concept of a raw step exists but covariances, and correlations do not exist.
+
+    Attributes
+    ----------
+    endpts: numpy.ndarray, (2, )
+        Zero-based frame indices for endpoints [start, stop) associated with this step.
+    indices: numpy.ndarray, (N, )
+        A convenience attribute, simply numpy.arange(endpts[0], endpts[1])
+    means: numpy.ndarray, biplane_kine.smoothing.kalman_filtering.StateMeans
+        The spatial position, velocity, and acceleration of the marker over the course of the trajectory
+        (between endpts[0] and endpts[1]).
+    covars: numpy.ndarray, biplane_kine.smoothing.kalman_filtering.CovarianceVec
+        The covariance matrix (compressed into a vector) of position, velocity, and cceleration for each spatial
+        dimension of the marker over the course of the trajectory (between endpts[0] and endpts[1]).
+    corrs: numpy.ndarray, biplane_kine.smoothing.kalman_filtering.CorrVec
+        The correlation coefficients of position, velocity, and cceleration for each spatial
+        dimension of the marker over the course of the trajectory (between endpts[0] and endpts[1]).
+    """
+    endpts: Union[np.ndarray, Sequence]
+    indices: np.ndarray
+    means: StateMeans
+    covars: Union[CovarianceVec, None]
+    corrs: Union[CorrVec, None]
+
+
+CovIndices = {
+    'pos': (0, 0),
+    'vel': (1, 1),
+    'acc': (2, 2),
+    'pos_vel': (0, 1),
+    'pos_acc': (0, 2),
+    'vel_acc': (1, 2),
+}
+"""Map from field names of CovarianceVec to corresponding indices in the covariance matrix."""
+
+
+def extract_covariances(covs: List[np.ndarray]) -> List[np.ndarray]:
+    """Extract covariances from covs [(n, 3, 3)_x, (n, 3, 3)_y, (n, 3, 3)_z] and return
+    [(n, 3)_pos, (n, 3)_vel, (n, 3)_acc, (n, 3)_pos_vel, (n, 3)_pos_acc, (n, 3)_vel_acc]"""
+    covariances = []
+    for cov_idx in CovIndices.values():
+        covariance = np.stack([cov[:, cov_idx[0], cov_idx[1]] for cov in covs], axis=-1)
+        covariances.append(covariance)
+    return covariances
+
+
+def extract_corrs(covariances: CovarianceVec) -> List[np.ndarray]:
+    """Extract correlations from covariances [(n, 3)_pos, (n, 3)_vel, (n, 3)_acc, (n, 3)_pos_vel, (n, 3)_pos_acc,
+    (n, 3)_vel_acc] and return [(n, 3)_pos_vel, (n, 3)_pos_acc, (n, 3)_vel_acc]"""
+    correlations = []
+    for corr_name in CorrVec._fields:
+        # split something like pos_vel into pos and vel
+        corr_name_split = corr_name.split('_')
+        first_term = corr_name_split[0]
+        second_term = corr_name_split[1]
+        # get covariance of pos_vel
+        cov = getattr(covariances, corr_name)
+        # get variance of pos
+        var_first_term = getattr(covariances, first_term)
+        # get variance of vel
+        var_second_term = getattr(covariances, second_term)
+        # compute correlation
+        correlation = np.divide(cov, np.multiply(np.sqrt(var_first_term), np.sqrt(var_second_term)))
+        correlations.append(correlation)
+    return correlations
+
+
+def extract_means(means: List[np.ndarray]) -> List[np.ndarray]:
+    """Extract means from means [(n, 3)_x (n, 3)_y (n, 3)_z] and return [(n, 3)_pos (n, 3)_vel (n, 3)_acc]"""
+    output = []
+    # here we iterate over each derivative (0, 1, 2)
+    for i in range(3):
+        mean_data = np.stack([mean[:, i] for mean in means], axis=-1)
+        output.append(mean_data)
+    return output
+
+
+class LinearKF1DFilterPy:
+    # This class is not used and has not gotten updated to conform to the new framework but I have left it here so the
+    # interaction with FilterPy is documented somewhere
     def __init__(self, dt, discrete_white_noise_var, r, p):
         self.dt = dt
         self.discrete_white_noise_var = discrete_white_noise_var
         self.r = r
         self.p = p
 
-    @classmethod
-    def create_linear_kalman_filter_1d(cls, dt, discrete_white_noise_var, r, x, p):
+    @staticmethod
+    def create_linear_kalman_filter_1d(dt, discrete_white_noise_var, r, x, p):
         f = np.array([[1, dt, 0.5 * dt * dt],
                       [0, 1, dt],
                       [0, 0, 1]])
@@ -102,43 +204,64 @@ class LinearKF1DFilterPy(LinearKF):
         return filtered_outputs, smoothed_outputs, covs, covs_smooth
 
 
-class LinearKF1DSimdKalman(LinearKF):
-    def __init__(self, dt, discrete_white_noise_var, r):
+class LinearKF1DSimdKalman:
+    """Linear Kalman filter based on simdkalman library.
+
+    Assumes a piecewise discrete white noise for the process model. The state variables for the model are position,
+    velocity, and acceleration. The measured variables are comprised only of position. In practice
+    'discrete_white_noise_var' is determined empirically, although a good rule of thumb is to use an initial guess
+    somewhere between 1/2 da and da, where da is the maximum predicted change in acceleration between time periods.
+
+    Attributes
+    ----------
+    dt: float
+        Time, in seconds, between each measurement.
+    discrete_white_noise_var: float
+        Acceleration variance used to compute the process model noise (e.g. mm^2/s^4).
+    r: float
+        Observation noise, measured in terms of variance (e.g. mm^2)
+    """
+    def __init__(self, dt: float, discrete_white_noise_var: float, r: float):
         self.dt = dt
         self.discrete_white_noise_var = discrete_white_noise_var
         self.r = r
+        self.kf = LinearKF1DSimdKalman.create_linear_kalman_filter_1d(self.dt, self.discrete_white_noise_var, self.r)
 
-    @classmethod
-    def create_linear_kalman_filter_1d(cls, dt, discrete_white_noise_var, r):
+    @staticmethod
+    def create_linear_kalman_filter_1d(dt: float, discrete_white_noise_var: float, r: float) -> simdkalman.KalmanFilter:
+        """Create a simdkalman filter."""
+        # dynamic (process) model - 1D equation of motion
         f = np.array([[1, dt, 0.5 * dt * dt],
                       [0, 1, dt],
                       [0, 0, 1]])
+        # assume piecewise discrete white noise for the process (dynamic) model
         q = Q_discrete_white_noise(dim=3, dt=dt, var=discrete_white_noise_var)
+        # measurement model - we only know position
         h = np.array([[1.0, 0.0, 0.0]])
-        tracker = simdkalman.KalmanFilter(state_transition=f, process_noise=q, observation_model=h, observation_noise=r)
-        return tracker
+        return simdkalman.KalmanFilter(state_transition=f, process_noise=q, observation_model=h, observation_noise=r)
 
-    def filter_trial_marker(self, marker_data, x0, p):
+    def filter_marker(self, marker_data: np.ndarray, x0: np.ndarray, p: np.ndarray) \
+            -> Tuple[StateMeans, StateMeans, CovarianceVec, CovarianceVec]:
+        """Filter marker data, numpy.ndarray (N, 3) given an initial guess of marker position (x0) with covariance of
+        p."""
         mus = []
         covs = []
         mus_smooth = []
         covs_smooth = []
 
-        kf = LinearKF1DSimdKalman.create_linear_kalman_filter_1d(self.dt, self.discrete_white_noise_var, self.r)
-
         # here we iterate over each dimension x, y, z
         for n in range(3):
-            result = kf.compute(marker_data[:, n], 0, initial_value=x0[n, :], initial_covariance=np.squeeze(p[:, :, n]),
-                                filtered=True, smoothed=True)
+            result = self.kf.compute(marker_data[:, n], 0, initial_value=x0[n, :],
+                                     initial_covariance=np.squeeze(p[:, :, n]), filtered=True, smoothed=True)
             mus.append(result.filtered.states.mean)
             covs.append(result.filtered.states.cov)
             mus_smooth.append(result.smoothed.states.mean)
             covs_smooth.append(result.smoothed.states.cov)
 
-        filtered_means = LinearKF1DSimdKalman.extract_means(mus)
-        smoothed_means = LinearKF1DSimdKalman.extract_means(mus_smooth)
-        filtered_covs = LinearKF1DSimdKalman.extract_covariances(covs)
-        smoothed_covs = LinearKF1DSimdKalman.extract_covariances(covs_smooth)
+        filtered_means = extract_means(mus)
+        smoothed_means = extract_means(mus_smooth)
+        filtered_covs = extract_covariances(covs)
+        smoothed_covs = extract_covariances(covs_smooth)
 
-        return (LinearKF1DSimdKalman.StateMeans(*filtered_means), LinearKF1DSimdKalman.StateMeans(*smoothed_means),
-                LinearKF1DSimdKalman.CovarianceVec(*filtered_covs), LinearKF1DSimdKalman.CovarianceVec(*smoothed_covs))
+        return (StateMeans(*filtered_means), StateMeans(*smoothed_means), CovarianceVec(*filtered_covs),
+                CovarianceVec(*smoothed_covs))
