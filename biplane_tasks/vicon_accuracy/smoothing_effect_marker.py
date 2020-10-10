@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Union, Dict, Any
 from biplane_kine.database.c3d_helper import C3DTrial
 from biplane_kine.database.vicon_accuracy import BiplaneMarkerTrialEndpts
+from biplane_kine.vicon_biplane_diff import BiplaneViconSmoothDiff
 import logging
 log = logging.getLogger(__name__)
 
@@ -56,7 +57,6 @@ if __name__ == '__main__':
     from biplane_kine.database import create_db
     from biplane_kine.database.vicon_accuracy import BiplaneMarkerSubjectEndpts
     from biplane_kine.graphing.vicon_accuracy_plotters import ViconAccuracySmoothingPlotter
-    from biplane_kine.vicon_biplane_diff import BiplaneViconSmoothDiff
     from biplane_kine.smoothing.kf_filtering_helpers import InsufficientDataError, DoNotUseMarkerError
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.common_graph_utils import init_graphing
