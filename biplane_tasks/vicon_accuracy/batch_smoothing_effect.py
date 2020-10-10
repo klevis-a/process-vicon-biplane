@@ -1,8 +1,33 @@
+"""Demonstrates the effect of smoothing for all Vicon markers tracked via biplane fluoroscopy
+
+This script compares both labeled (raw) and smoothed Vicon marker data against the marker position data obtain by
+tracking the marker via biplane fluoroscopy. This is useful for determining the spatiotemporal syncing of the Vicon and
+biplane fluoroscopy system, and to determine the effects of smoothing. This script iterates over the filesystem-based
+database of markers tracked via biplane fluoroscopy and creates PDF records of the effects of smoothing if specified.
+
+The path to a config directory (containing parameters.json) must be passed in as an argument. Within parameters.json the
+following keys must be present:
+
+logger_name: Name of the loggger set up in logging.ini that will receive log messages from this script.
+accuracy_db_dir: Path to the directory containing marker data as tracked via biplane fluoroscopy
+smoothing_exceptions: Path to a file containing smoothing exceptions for each trial/marker.
+labeled_c3d_dir: Path to directory where labeled C3D trial files are located.
+filled_c3d_dir: Path to directory where filled C3D trial files are located.
+use_filled_portion: Since the smoothing process also fills gaps, this flag specifies whether to use the filled portion
+                    to compute statistics.
+"""
+
+import numpy as np
+import matplotlib.axes
+import matplotlib.lines
+from typing import List, Tuple, Dict
 from pythonGraphingLibrary import plotUtils, bp_utils
 import matplotlib.pyplot as plt
 
 
-def create_summary_boxplot(ax, diff_data, y_label, group_names, metric_names, n_obs_pos):
+def create_summary_boxplot(ax: matplotlib.axes.Axes, diff_data: np.ndarray, y_label: str, group_names: List[str],
+                           metric_names: List[str], n_obs_pos: Tuple[float, float]) \
+                            -> Dict[str, List[matplotlib.lines.Line2D]]:
     num_metrics = len(metric_names)
     # calculations
     num_bars, num_obs, num_groups, box_positions = bp_utils.calc_bar_positions(diff_data, num_metrics)
@@ -37,7 +62,6 @@ if __name__ == '__main__':
     if __package__ is None:
         print('Use -m option to run this library module as a script.')
 
-    import sys
     import distutils.util
     import pandas as pd
     import numpy as np
@@ -52,11 +76,13 @@ if __name__ == '__main__':
     from biplane_kine.smoothing.kf_filtering_helpers import InsufficientDataError, DoNotUseMarkerError
     from biplane_kine.misc.json_utils import Params
     from .smoothing_effect_marker import add_c3d_helper, marker_accuracy_diff
+    from ..general.arg_parser import mod_arg_parser
     import logging
     from logging.config import fileConfig
 
     # initialize
-    config_dir = Path(sys.argv[1])
+    config_dir = Path(mod_arg_parser('Demonstrates the effect of smoothing for all Vicon markers tracked via biplane '
+                                     'fluoroscopy', __package__, __file__))
     params = Params.get_params(config_dir / 'parameters.json')
 
     # logging
@@ -128,6 +154,7 @@ if __name__ == '__main__':
     summary_df['Marker'] = summary_df['Marker'].astype(pd.StringDtype())
     summary_df.set_index(['Trial_Name', 'Marker'], drop=False, inplace=True, verify_integrity=True)
 
+    # print to file if requested
     if bool(distutils.util.strtobool(params.print_to_file)):
         # create PDFs
         root_path = Path(params.output_dir)
@@ -135,6 +162,7 @@ if __name__ == '__main__':
             log.info('Outputting subject %s', subject_name)
             subject_dir = (root_path / subject_name)
             subject_dir.mkdir(parents=True, exist_ok=True)
+            # trial_name is a level 0 index (marker_name is level 1) so group by that
             for trial_name, trial_df in subject_df.groupby(level=0):
                 log.info('Outputting trial %s', trial_name)
                 trial_dir = subject_dir / trial_name

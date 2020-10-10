@@ -28,7 +28,8 @@ if __name__ == '__main__':
     from .batch_kf_smoothing import trial_plotter
 
     # initialize
-    config_dir = Path(mod_arg_parser('Time database creation', __package__, __file__))
+    config_dir = Path(mod_arg_parser('Batch smooth Vicon marker data using Kalman smoothing (multi-threaded)',
+                                     __package__, __file__))
     params = Params.get_params(config_dir / 'parameters.json')
 
     # ready db

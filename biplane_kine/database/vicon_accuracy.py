@@ -63,7 +63,7 @@ class BiplaneMarkerTrial(TrialDescription):
     def _marker_data(self) -> Dict[str, ViconAccuracyMarkerData]:
         return {k: BiplaneMarkerTrial._process_marker_file(v) for k, v in self._marker_files.items()}
 
-    def __getitem__(self, marker_name: str) -> np.ndarray:
+    def __getitem__(self, marker_name: str) -> ViconAccuracyMarkerData:
         """Marker based indexing ([marker_name]) to the Vicon markers as tracked via biplane fluoroscopy.
 
         Returns a namedtuple providing access to the frame indices (indices, (n,) numpy array) and marker positions

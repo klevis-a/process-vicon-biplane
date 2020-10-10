@@ -91,7 +91,7 @@ if __name__ == '__main__':
     from logging.config import fileConfig
 
     # initialize
-    config_dir = Path(mod_arg_parser('Time database creation', __package__, __file__))
+    config_dir = Path(mod_arg_parser('Batch smooth Vicon marker data using Kalman smoothing', __package__, __file__))
     params = Params.get_params(config_dir / 'parameters.json')
 
     # logging
