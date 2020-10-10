@@ -7,7 +7,7 @@ from lazy import lazy
 from ezc3d import c3d
 from typing import Union, Callable, Type
 from .db_common import TrialDescription, ViconEndpts, SubjectDescription, trial_descriptor_df
-from ..misc.python_utils import NestedContainer
+from ..misc.python_utils import NestedDescriptor
 
 
 class C3DHelper:
@@ -82,16 +82,16 @@ class C3DTrial(TrialDescription):
         return C3DHelper(str(self.filled_c3d_path))
 
     @lazy
-    def labeled(self) -> NestedContainer:
+    def labeled(self) -> NestedDescriptor:
         """Descriptor that allows marker indexed ([marker_name]) access to labeled C3D data. The indexed access returns
          a (n, 4) numpy array view associated with marker_name."""
-        return NestedContainer(self.labeled_c3d, c3d_get_item_method)
+        return NestedDescriptor(self.labeled_c3d, c3d_get_item_method)
 
     @lazy
-    def filled(self) -> NestedContainer:
+    def filled(self) -> NestedDescriptor:
         """Descriptor that allows marker indexed ([marker_name]) access to filled C3D data. The indexed access returns
         a (n, 4) numpy array view associated with marker_name."""
-        return NestedContainer(self.filled_c3d, c3d_get_item_method)
+        return NestedDescriptor(self.filled_c3d, c3d_get_item_method)
 
 
 class C3DTrialEndpts(C3DTrial, ViconEndpts):

@@ -24,7 +24,7 @@ filled_c3d_dir: Path to directory where filled C3D trial files are located.
 import numpy as np
 from lazy import lazy
 from biplane_kine.database.c3d_helper import C3DTrialEndpts, C3DHelper
-from biplane_kine.misc.python_utils import NestedContainer
+from biplane_kine.misc.python_utils import NestedDescriptor
 import logging
 
 log = logging.getLogger(__name__)
@@ -38,16 +38,16 @@ def c3d_get_item_method_non_hom(c3d_helper: C3DHelper, item: str) -> np.ndarray:
 class C3DTrialEndptsNonHom(C3DTrialEndpts):
     """A proxy for the C3DTrialEndpts that returns non-homogeneous marker data (N, 3)."""
     @lazy
-    def labeled(self) -> NestedContainer:
+    def labeled(self) -> NestedDescriptor:
         """Descriptor that allows marker indexed ([marker_name]) access to labeled C3D data. The indexed access returns
          a (n, 3) numpy array view associated with marker_name."""
-        return NestedContainer(self.labeled_c3d, c3d_get_item_method_non_hom)
+        return NestedDescriptor(self.labeled_c3d, c3d_get_item_method_non_hom)
 
     @lazy
-    def filled(self) -> NestedContainer:
+    def filled(self) -> NestedDescriptor:
         """Descriptor that allows marker indexed ([marker_name]) access to filled C3D data. The indexed access returns
          a (n, 3) numpy array view associated with marker_name."""
-        return NestedContainer(self.filled_c3d, c3d_get_item_method_non_hom)
+        return NestedDescriptor(self.filled_c3d, c3d_get_item_method_non_hom)
 
 
 if __name__ == '__main__':

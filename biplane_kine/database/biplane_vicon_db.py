@@ -6,7 +6,7 @@ import pandas as pd
 from lazy import lazy
 from typing import Union
 from .db_common import TrialDescription, ViconEndpts, SubjectDescription, trial_descriptor_df
-from ..misc.python_utils import NestedContainer
+from ..misc.python_utils import NestedDescriptor
 
 
 def csv_get_item_method(csv_data: pd.DataFrame, marker_name: str) -> np.ndarray:
@@ -57,16 +57,16 @@ class ViconCsvTrial(TrialDescription, ViconEndpts):
         return pd.read_csv(self.vicon_csv_file_filled, header=[0], skiprows=[1], dtype=np.float64)
 
     @lazy
-    def labeled(self) -> NestedContainer:
+    def labeled(self) -> NestedDescriptor:
         """Descriptor that allows marker indexed ([marker_name]) access to labeled CSV data. The indexed access returns
         a (n, 3) numpy array view."""
-        return NestedContainer(self.vicon_csv_data_labeled, csv_get_item_method)
+        return NestedDescriptor(self.vicon_csv_data_labeled, csv_get_item_method)
 
     @lazy
-    def filled(self) -> NestedContainer:
+    def filled(self) -> NestedDescriptor:
         """Descriptor that allows marker indexed ([marker_name]) access to filled CSV data. The indexed access return
         a (n, 3) numpy array view."""
-        return NestedContainer(self.vicon_csv_data_filled, csv_get_item_method)
+        return NestedDescriptor(self.vicon_csv_data_filled, csv_get_item_method)
 
 
 class ViconCsvSubject(SubjectDescription):

@@ -3,7 +3,7 @@
 from typing import Callable, Any
 
 
-class NestedContainer:
+class NestedDescriptor:
     """A class that is a descriptor, which allows access to items in the nested container via the supplied
     get_item_method."""
     def __init__(self, nested_container: Any, get_item_method: Callable):
