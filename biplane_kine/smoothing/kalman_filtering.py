@@ -139,14 +139,15 @@ def extract_corrs(covariances: CovarianceVec) -> List[np.ndarray]:
     return correlations
 
 
-def extract_means(means: List[np.ndarray]) -> List[np.ndarray]:
+def extract_means(means: List[np.ndarray]) -> np.ndarray:
     """Extract means from means [(n, 3)_x (n, 3)_y (n, 3)_z] and return [(n, 3)_pos (n, 3)_vel (n, 3)_acc]"""
-    output = []
-    # here we iterate over each derivative (0, 1, 2)
-    for i in range(3):
-        mean_data = np.stack([mean[:, i] for mean in means], axis=-1)
-        output.append(mean_data)
-    return output
+
+    # 1. start with means which is a list of (N, 3) numpy arrays, where the last dimension represents kinematic variable
+    #    (pos, vel, acc)
+    # 2. np.stack creates a (N, 3, 3) array of frame index x kinematic variable x spatial dimension (x, y, z)
+    # 3. swapaxes creates a view of the above array as (3, N, 3) - kinematic variable x frame index x spatial dimension
+    # 4. return a copy since we want the optimized memory layout of the array as in Step 3
+    return np.swapaxes(np.stack(means, axis=-1), 0, 1).copy()
 
 
 class LinearKF1DFilterPy:
