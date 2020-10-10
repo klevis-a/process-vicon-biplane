@@ -1,6 +1,6 @@
 """Batch create PDF records of raw (labeled) vs filled Vicon marker data
 
-This script iterates over the Vicon/biplane fluoroscpy filesystem-based database and creates PDF records of the
+This script iterates over the Vicon/biplane fluoroscopy filesystem-based database and creates PDF records of the
 difference between raw (labeled) vs filled Vicon marker data.
 
 The path to a config directory (containing parameters.json) must be passed in as an argument. Within parameters.json the

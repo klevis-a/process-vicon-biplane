@@ -1,6 +1,6 @@
 """Batch smooth Vicon marker data using Kalman smoothing
 
-This script iterates over the Vicon/biplane fluoroscpy filesystem-based database and creates PDF records of the effects
+This script iterates over the Vicon/biplane fluoroscopy filesystem-based database and creates PDF records of the effects
 of smoothing.
 
 The path to a config directory (containing parameters.json) must be passed in as an argument. Within parameters.json the

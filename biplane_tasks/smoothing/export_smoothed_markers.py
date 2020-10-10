@@ -1,6 +1,23 @@
+"""Export smoothed marker data
+
+This script iterates over the Vicon/biplane fluoroscopy filesystem-based database and exports smoothed Vicon marker
+trial data for each trial.
+
+The path to a config directory (containing parameters.json) must be passed in as an argument. Within parameters.json the
+following keys must be present:
+
+logger_name: Name of the loggger set up in logging.ini that will receive log messages from this script.
+biplane_vicon_db_dir: Path to the directory containing Vicon skin marker data.
+output_dir: Path to the directory where the smoothed marker data should be exported.
+smoothing_exceptions: Path to a file containing smoothing exceptions for each trial/marker.
+"""
+
+from pathlib import Path
 import numpy as np
+from typing import List, Dict, Any, Union
 import itertools
 from biplane_kine.database.db_common import MARKERS
+from biplane_kine.database.biplane_vicon_db import ViconCsvTrial
 from biplane_kine.smoothing.kf_filtering_helpers import (piecewise_filter_with_exception, InsufficientDataError,
                                                          DoNotUseMarkerError)
 import logging
@@ -9,14 +26,16 @@ from ..parameters import marker_smoothing_exceptions
 log = logging.getLogger(__name__)
 
 
-def export_to_csv(file_name, export_data, markers):
+def export_to_csv(file_name: Union[str, Path], export_data: List[np.ndarray], markers: List[str]) -> None:
+    """Export smoothed marker data to CSV."""
     header_line_1 = ','.join(itertools.chain.from_iterable(itertools.repeat(x, 3) for x in markers))
     header_line_2 = ','.join(['x', 'y', 'z'] * len(markers))
     np.savetxt(file_name, np.concatenate(export_data, axis=1), delimiter=',', fmt='%.5g', comments='',
                header=header_line_1 + '\n' + header_line_2)
 
 
-def trial_exporter(trial, dt, subj_dir, all_smoothing_except):
+def trial_exporter(trial: ViconCsvTrial, dt: float, subj_dir: Path, all_smoothing_except: Dict[str, Any]) -> None:
+    """Smooth all markers in trial and export to CSV."""
     log.info('Exporting trial %s', trial.trial_name)
     trial_dir = subj_dir / trial.trial_name
     trial_dir.mkdir(parents=True, exist_ok=True)
@@ -50,16 +69,15 @@ if __name__ == '__main__':
     if __package__ is None:
         print('Use -m option to run this library module as a script.')
 
-    import sys
-    from pathlib import Path
     from biplane_kine.database import create_db
     from biplane_kine.database.biplane_vicon_db import ViconCsvSubject
     from biplane_kine.misc.json_utils import Params
     from ..parameters import read_smoothing_exceptions
+    from ..general.arg_parser import mod_arg_parser
     from logging.config import fileConfig
 
     # initialize
-    config_dir = Path(sys.argv[1])
+    config_dir = Path(mod_arg_parser('Export smoothed marker data', __package__, __file__))
     params = Params.get_params(config_dir / 'parameters.json')
 
     # logging
