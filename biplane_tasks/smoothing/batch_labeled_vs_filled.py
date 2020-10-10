@@ -1,6 +1,21 @@
+"""Batch create PDF records of raw (labeled) vs filled Vicon marker data
+
+This script iterates over the Vicon/biplane fluoroscpy filesystem-based database and creates PDF records of the
+difference between raw (labeled) vs filled Vicon marker data.
+
+The path to a config directory (containing parameters.json) must be passed in as an argument. Within parameters.json the
+following keys must be present:
+
+logger_name: Name of the loggger set up in logging.ini that will receive log messages from this script.
+biplane_vicon_db_dir: Path to the directory containing Vicon skin marker data.
+output_dir: Path to the directory where PDF records for trial will be output.
+"""
+
+from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from biplane_kine.database.db_common import MARKERS
+from biplane_kine.database.biplane_vicon_db import ViconCsvTrial
 from biplane_kine.graphing.smoothing_plotters import LabeledFilledMarkerPlotter
 from .batch_kf_smoothing import create_and_save_error_figure
 import logging
@@ -8,7 +23,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def trial_plotter(trial, subj_dir):
+def trial_plotter(trial: ViconCsvTrial, subj_dir: Path) -> None:
     log.info('Outputting trial %s', trial.trial_name)
     trial_pdf_file = subj_dir / (trial.trial_name + '.pdf')
     with PdfPages(trial_pdf_file) as trial_pdf:
@@ -31,8 +46,7 @@ if __name__ == '__main__':
     if __package__ is None:
         print('Use -m option to run this library module as a script.')
 
-    import sys
-    from pathlib import Path
+    from ..general.arg_parser import mod_arg_parser
     from biplane_kine.database import create_db
     from biplane_kine.database.biplane_vicon_db import ViconCsvSubject
     from biplane_kine.misc.json_utils import Params
@@ -40,7 +54,7 @@ if __name__ == '__main__':
     from logging.config import fileConfig
 
     # initialize
-    config_dir = Path(sys.argv[1])
+    config_dir = Path(mod_arg_parser('Time database creation', __package__, __file__))
     params = Params.get_params(config_dir / 'parameters.json')
 
     # logging
