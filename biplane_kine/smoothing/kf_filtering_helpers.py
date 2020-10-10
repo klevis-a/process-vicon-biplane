@@ -64,8 +64,8 @@ def x0_guess(marker_pos_labeled: np.ndarray, marker_pos_filled: np.ndarray, dt: 
     x0_pos = pos_lowpass_filter(marker_pos_filled, start_idx, num_points=points_to_filter)
     x0_vel = np.gradient(x0_pos, dt, axis=0)
     x0_acc = np.gradient(x0_vel, dt, axis=0)
-    x0 = np.array([x0_pos[0, :], np.mean(x0_vel[0:points_to_average, :], axis=0),
-                   np.mean(x0_acc[0:points_to_average, :], axis=0)]).T
+    x0 = np.stack([x0_pos[0, :], np.mean(x0_vel[0:points_to_average, :], axis=0),
+                   np.mean(x0_acc[0:points_to_average, :], axis=0)])
     return x0, start_idx, stop_idx
 
 
