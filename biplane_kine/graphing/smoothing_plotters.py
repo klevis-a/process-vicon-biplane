@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.figure
 import matplotlib.pyplot as plt
-from typing import List
+from typing import List, Union, Sequence
 from biplane_kine.graphing.smoothing_graph_utils \
     import (marker_graph_init, marker_graph_add, marker_graph_title, add_vicon_start_stop, marker_diff_his_init,
             marker_diff_his_add, marker_graph_add_cov, cov_trend_graph_init, cov_trend_graph_add)
@@ -27,7 +27,8 @@ class LabeledMarkerPloter:
         biplane fluoroscopy trial.
     """
 
-    def __init__(self, trial_name: str, marker_name: str, marker_pos_labeled: np.ndarray, vicon_endpts: np.ndarray):
+    def __init__(self, trial_name: str, marker_name: str, marker_pos_labeled: np.ndarray,
+                 vicon_endpts: Union[np.ndarray, Sequence]):
         self.trial_name = trial_name
         self.marker_name = marker_name
         self.marker_pos_labeled = marker_pos_labeled
@@ -55,7 +56,7 @@ class LabeledFilledMarkerPlotter(LabeledMarkerPloter):
     """
 
     def __init__(self, trial_name: str, marker_name: str, marker_pos_labeled: np.ndarray, marker_pos_filled: np.ndarray,
-                 vicon_endpts: np.ndarray):
+                 vicon_endpts: Union[np.ndarray, Sequence]):
         super().__init__(trial_name, marker_name, marker_pos_labeled, vicon_endpts)
         self.marker_pos_filled = marker_pos_filled
 
@@ -103,7 +104,7 @@ class SmoothingDebugPlotter:
     """
 
     def __init__(self, trial_name: str, marker_name: str, raw: FilterStep, filtered: FilterStep, smoothed: FilterStep,
-                 vicon_endpts: np.ndarray):
+                 vicon_endpts: Union[np.ndarray, Sequence]):
         self.trial_name = trial_name
         self.marker_name = marker_name
         self.raw = raw
@@ -305,7 +306,7 @@ class SmoothingOutputPlotter(SmoothingDebugPlotter):
         Filled Vicon marker position data.
     """
     def __init__(self, trial_name: str, marker_name: str, raw: FilterStep, filled: FilterStep, filtered: FilterStep,
-                 smoothed: FilterStep, vicon_endpts: np.ndarray):
+                 smoothed: FilterStep, vicon_endpts: Union[np.ndarray, Sequence]):
         super().__init__(trial_name, marker_name, raw, filtered, smoothed, vicon_endpts)
         self.filled = filled
 

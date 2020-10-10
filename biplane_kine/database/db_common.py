@@ -38,7 +38,7 @@ class ViconEndpts:
         super().__init__(**kwargs)
 
     @lazy
-    def vicon_endpts(self):
+    def vicon_endpts(self) -> np.ndarray:
         """Indices (endpoints) that indicate which of the frames in a Vicon trial correspond to the endpoints of the
         reciprocal biplane fluoroscopy trial."""
         _endpts_df = pd.read_csv(self.endpts_file, header=0)
