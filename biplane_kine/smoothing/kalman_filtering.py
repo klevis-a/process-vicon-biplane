@@ -253,7 +253,7 @@ class LinearKF1DSimdKalman:
         # here we iterate over each dimension x, y, z
         for n in range(3):
             result = self.kf.compute(marker_data[:, n], 0, initial_value=x0[:, n],
-                                     initial_covariance=np.squeeze(p[:, :, n]), filtered=True, smoothed=True)
+                                     initial_covariance=np.squeeze(p[n, :, :]), filtered=True, smoothed=True)
             mus.append(result.filtered.states.mean)
             covs.append(result.filtered.states.cov)
             mus_smooth.append(result.smoothed.states.mean)

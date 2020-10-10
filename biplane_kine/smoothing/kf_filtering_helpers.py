@@ -99,7 +99,7 @@ def kf_filter_marker_piece(marker_pos_labeled: np.ndarray, marker_pos_filled: np
     pos_filled_piece = marker_pos_filled[piece_start:piece_stop, :]
     x0, start_idx, stop_idx = x0_guess(pos_labeled_piece, pos_filled_piece, dt, 50, 10)
     # guess for initial covariance, showing increasing uncertainty for velocity and acceleration
-    p = np.tile(np.diag([1, 100, 1000])[:, :, np.newaxis], 3)
+    p = np.tile(np.diag([1, 100, 1000]), (3, 1, 1))
     kf = LinearKF1DSimdKalman(dt=dt, discrete_white_noise_var=10000, r=1)
     filtered_means, smoothed_means, filtered_covs, smoothed_covs = \
         kf.filter_marker(pos_labeled_piece[start_idx:stop_idx, :], x0, p)
