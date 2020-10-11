@@ -1,3 +1,8 @@
+"""This script tests whether matmul or einsum is faster at transforming a collection of matrices into a different
+coordinate system. In biomechanics this operation is performed when transforming a segment pose trajectory into a
+different coordinate system.
+"""
+
 import numpy as np
 import time
 
@@ -15,7 +20,7 @@ def cs_transform_mats_one_mat_einsum(mat, mats):
     return np.einsum('jk,ikl->ijl', mat, mats)
 
 
-num_el = 1000
+# simple test that can be easily verified by eye that the expected transformation is actually taking place
 m = np.eye(4) * 2.1
 ms = np.stack([np.eye(4) * i for i in range(1, 11)], axis=0)
 
@@ -23,6 +28,8 @@ matmul_res = cs_transform_mats_one_mat_matmul(m, ms)
 einsum_res = cs_transform_mats_one_mat_einsum(m, ms)
 assert(np.array_equal(matmul_res, einsum_res))
 
+# performance test
+num_el = 1000
 n = 1000
 
 m_r = [np.random.rand(4, 4) for i in range(n)]

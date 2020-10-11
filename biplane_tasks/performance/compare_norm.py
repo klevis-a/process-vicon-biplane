@@ -1,3 +1,7 @@
+"""This script tests whether to use the built-in linalg.norm operation or einsum to compute the L2 (Euclidean) norm of
+a collection of vectors.
+"""
+
 import numpy as np
 from numpy import linalg
 import time
@@ -16,13 +20,16 @@ def extended_dot_einsum(vecs1, vecs2):
     return np.einsum('ij,ij->i', vecs1, vecs2)
 
 
-num_el = 1000
+# simple test that can be easily verified by eye that the expected transformation is actually taking place
 vs1 = np.arange(10).reshape((10, 1)) + np.arange(3)
 
 einsum_res = np.sqrt(extended_dot_einsum(vs1, vs1))
 la_res = la_norm(vs1)
 assert(np.array_equal(einsum_res, la_res))
 
+
+# performance test
+num_el = 1000
 n = 1000
 
 vs1_r = [np.random.rand(num_el, 3) for i in range(n)]

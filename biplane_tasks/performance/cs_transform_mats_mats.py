@@ -1,3 +1,8 @@
+"""This script tests whether matmul or einsum is faster at multipliying a collection of matrices with a another
+ collection (same length) of matrices of the same dimension. In biomechanics this operation is used when expressing
+ a segment in the coordinate system of its proximal segment.
+"""
+
 import numpy as np
 import time
 
@@ -15,7 +20,7 @@ def cs_transform_mats_mats_einsum(mats1, mats2):
     return np.einsum('ijk,ikl->ijl', mats1, mats2)
 
 
-num_el = 1000
+# simple test that can be easily verified by eye that the expected transformation is actually taking place
 ms1 = np.stack([np.eye(4) * i for i in range(1, 11)], axis=0)
 ms2 = np.stack([np.eye(4) * i for i in range(1, 11)], axis=0)
 
@@ -23,6 +28,8 @@ matmul_res = cs_transform_mats_mats_matmul(ms1, ms2)
 einsum_res = cs_transform_mats_mats_einsum(ms1, ms2)
 assert(np.array_equal(matmul_res, einsum_res))
 
+# performance test
+num_el = 1000
 n = 1000
 
 ms1_r = [np.random.rand(num_el, 4, 4) for i in range(n)]

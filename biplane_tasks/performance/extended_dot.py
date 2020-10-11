@@ -1,3 +1,8 @@
+"""This script tests whether to use matrix multiplication, sum-multiply, or einsum to compute the dot product of two
+collections of vectors. This is typically used in the context of finding the norm of a collection of vectors, but is
+also used when computing torque, energy, etc.
+"""
+
 import numpy as np
 import time
 
@@ -20,7 +25,7 @@ def extended_dot_sum_multiply(vecs1, vecs2):
     return np.sum(np.multiply(vecs1, vecs2), axis=1)
 
 
-num_el = 1000
+# simple test that can be easily verified by eye that the expected transformation is actually taking place
 vs1 = np.arange(10).reshape((10, 1)) + np.arange(3)
 vs2 = np.arange(10).reshape((10, 1)) + np.arange(3)
 
@@ -30,6 +35,9 @@ sum_multiply_res = extended_dot_sum_multiply(vs1, vs2)
 assert(np.array_equal(matmul_res, einsum_res))
 assert(np.array_equal(matmul_res, sum_multiply_res))
 
+
+# performance test
+num_el = 1000
 n = 1000
 
 vs1_r = [np.random.rand(num_el, 4) for i in range(n)]
