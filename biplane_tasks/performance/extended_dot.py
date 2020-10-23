@@ -8,7 +8,7 @@ import time
 
 
 # dot product of vectors in vecs1 with corresponding vectors in vecs2
-# assume that vecs1 is nx4 and vecs2 is nx4, and the output should be nx4
+# assume that vecs1 is nx4 and vecs2 is nx4, and the output should be n
 
 # implemented using matrix multiplication
 def extended_dot_matmul(vecs1, vecs2):
