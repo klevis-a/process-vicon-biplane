@@ -47,8 +47,8 @@ num_el = 1000
 ms1_r = [np.random.rand(num_el, 4, 4) for i in range(n)]
 ms2_r = [np.random.rand(num_el, 4, 4) for i in range(n)]
 for i in range(n):
-    ms1_r[i][:, 3, :] = np.asarray([0, 0, 0, 1])
-    ms2_r[i][:, 3, :] = np.asarray([0, 0, 0, 1])
+    ms1_r[i][:, 3, :] = np.array([0, 0, 0, 1])
+    ms2_r[i][:, 3, :] = np.array([0, 0, 0, 1])
 
 r1_r = [mat[:, :3, :3] for mat in ms1_r]
 t1_r = [mat[:, :3, 3][..., np.newaxis] for mat in ms1_r]

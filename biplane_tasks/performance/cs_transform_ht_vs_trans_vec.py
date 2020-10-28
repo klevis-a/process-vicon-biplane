@@ -52,7 +52,7 @@ vs2_r = [np.random.rand(num_el, 4)[..., np.newaxis] for i in range(n)]
 vs1_r_trans = [v[:, :3, :] for v in vs1_r]
 vs2_r_trans = [v[:, :3, :] for v in vs2_r]
 for i in range(n):
-    ms_r[i][:, 3, :] = np.asarray([0, 0, 0, 1])
+    ms_r[i][:, 3, :] = np.array([0, 0, 0, 1])
     vs1_r[i][:, 3, :] = 1
     vs2_r[i][:, 3, :] = 1
 r_r = [mat[:, :3, :3] for mat in ms_r]

@@ -296,7 +296,7 @@ def piecewise_filter_with_exception(marker_exceptions: Dict[str, Any], marker_po
         log.warning('Skipping marker because it is labeled as DO NOT USE.')
         raise DoNotUseMarkerError('Marker has been marked as DO NOT USE')
     smoothing_params = marker_exceptions.get('smoothing_params', {})
-    frame_ignores = np.asarray(marker_exceptions.get('frame_ignores', []))
+    frame_ignores = np.array(marker_exceptions.get('frame_ignores', []))
 
     # ignore frames
     if frame_ignores.size > 0:
