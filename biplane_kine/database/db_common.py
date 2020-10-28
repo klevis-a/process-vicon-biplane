@@ -118,12 +118,6 @@ class ViconCSTransform:
     ----------
     f_t_v_file: pathlib.Path
         Path to the file containing the Vicon to biplane fluoroscopy coordinate system transformation data.
-    f_t_v_data: pandas.Dataframe
-        Raw data (quaternion + translation) describing the Vicon to biplane fluoroscopy coordinate system
-        transformation.
-    f_t_v: numpy.ndarray
-        A homogeneous transformation matrix ((4, 4) numpy.ndarray) describing the Vicon to biplane fluoroscopy
-        coordinate system transformation.
     """
 
     def __init__(self, f_t_v_file: Union[Callable, Path], **kwargs):
