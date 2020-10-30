@@ -64,3 +64,7 @@ def torso_cs_isb(c7: np.ndarray, clav: np.ndarray, strn: np.ndarray, t10: np.nda
     torso[0:3, 3] = clav
 
     return torso
+
+
+torso_cs_v3d.markers = ['C7', 'CLAV', 'STRN', 'T10', 'RGTR', 'LGTR', 'LSHO', 'RSH0']
+torso_cs_isb.markers = ['C7', 'CLAV', 'STRN', 'T10', 'T5']

@@ -12,10 +12,11 @@ _subject_anthro_dtype = {'Subject': 'string', 'Dominant_Arm': 'string', 'Gender'
                          'Hand_Thickness': np.float64}
 
 
-def create_db(db_dir: Union[str, Path], subject_class: Any) -> pd.DataFrame:
-    """Create a Pandas dataframe summarizing the trials contained in the filesystem-based database."""
+def create_db(db_dir: Union[str, Path], subject_class: Any, **kwargs) -> pd.DataFrame:
+    """Create a Pandas dataframe summarizing the trials contained in the filesystem-based database, passing kwargs to
+    the subject constructor."""
     db_path = Path(db_dir)
-    subjects = [subject_class(subject_dir) for subject_dir in db_path.iterdir() if subject_dir.is_dir()]
+    subjects = [subject_class(subject_dir, **kwargs) for subject_dir in db_path.iterdir() if subject_dir.is_dir()]
     subject_dfs = [subject.subject_df for subject in subjects]
     db = pd.concat(subject_dfs, ignore_index=True)
     db.set_index('Trial_Name', drop=False, inplace=True, verify_integrity=True)
