@@ -25,9 +25,15 @@ def trial_plotter(trial_row):
 
     def process_trial(trial):
         torso_truncated = trial.torso_fluoro[trial.vicon_endpts[0]:trial.vicon_endpts[1]]
-        torso_intrinsic = change_cs(ht_inv(torso_truncated[1]), torso_truncated)
-        torso_pos = torso_intrinsic[:, :3, 3]
-        torso_eul = np.rad2deg(zxy_intrinsic(torso_intrinsic))
+        present_frames = np.nonzero(~np.any(np.isnan(torso_truncated), (-2, -1)))[0]
+        if present_frames.size == 0:
+            num_frames = trial.vicon_endpts[1] - trial.vicon_endpts[0]
+            torso_pos = np.full((num_frames, 3), np.nan)
+            torso_eul = np.full((num_frames, 3), np.nan)
+        else:
+            torso_intrinsic = change_cs(ht_inv(torso_truncated[present_frames[0]]), torso_truncated)
+            torso_pos = torso_intrinsic[:, :3, 3]
+            torso_eul = np.rad2deg(zxy_intrinsic(torso_intrinsic))
         return torso_pos, torso_eul
 
     torso_pos_smoothed, torso_eul_smoothed = process_trial(trial_row['Smoothed_Trial'])
@@ -102,6 +108,7 @@ if __name__ == '__main__':
         subject_pdf_file = root_path / (subject_name + '.pdf')
         with PdfPages(subject_pdf_file) as subject_pdf:
             for plotter in subject_df['Plotter']:
+                log.info('Outputting kinematics for trial %s', plotter.trial_name)
                 figs = plotter.plot()
                 subject_pdf.savefig(figs[3])
                 subject_pdf.savefig(figs[2])
