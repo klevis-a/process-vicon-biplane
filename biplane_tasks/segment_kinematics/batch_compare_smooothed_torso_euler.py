@@ -23,22 +23,25 @@ log = logging.getLogger(__name__)
 def trial_plotter(trial_row):
     log.info('Processing trial %s', trial_row['Trial_Name'])
 
-    def process_trial(trial):
+    def process_trial(trial, base_frame_inv=None):
         torso_truncated = trial.torso_fluoro[trial.vicon_endpts[0]:trial.vicon_endpts[1]]
         present_frames = np.nonzero(~np.any(np.isnan(torso_truncated), (-2, -1)))[0]
         if present_frames.size == 0:
             num_frames = trial.vicon_endpts[1] - trial.vicon_endpts[0]
             torso_pos = np.full((num_frames, 3), np.nan)
             torso_eul = np.full((num_frames, 3), np.nan)
+            base_frame_inv = None
         else:
-            torso_intrinsic = change_cs(ht_inv(torso_truncated[present_frames[0]]), torso_truncated)
+            if base_frame_inv is None:
+                base_frame_inv = ht_inv(torso_truncated[present_frames[0]])
+            torso_intrinsic = change_cs(base_frame_inv, torso_truncated)
             torso_pos = torso_intrinsic[:, :3, 3]
             torso_eul = np.rad2deg(zxy_intrinsic(torso_intrinsic))
-        return torso_pos, torso_eul
+        return torso_pos, torso_eul, base_frame_inv
 
-    torso_pos_smoothed, torso_eul_smoothed = process_trial(trial_row['Smoothed_Trial'])
-    torso_pos_labeled, torso_eul_labeled = process_trial(trial_row['Labeled_Trial'])
-    torso_pos_filled, torso_eul_filled = process_trial(trial_row['Filled_Trial'])
+    torso_pos_smoothed, torso_eul_smoothed, base_inv = process_trial(trial_row['Smoothed_Trial'])
+    torso_pos_labeled, torso_eul_labeled, _ = process_trial(trial_row['Labeled_Trial'], base_inv)
+    torso_pos_filled, torso_eul_filled, _ = process_trial(trial_row['Filled_Trial'], base_inv)
 
     # graph
     frame_nums = np.arange(trial_row['Smoothed_Trial'].vicon_endpts[0], trial_row['Smoothed_Trial'].vicon_endpts[1]) + 1
