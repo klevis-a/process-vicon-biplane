@@ -4,7 +4,7 @@ import matplotlib.figure
 from typing import List, Dict
 from .common_graph_utils import make_interactive
 from .smoothing_graph_utils import marker_graph_init, marker_graph_add
-from .kine_graph_utils import kine_graph_init, kine_graph_add
+from .kine_graph_utils import kine_graph_init, kine_graph_add, plot_marker_cluster_avail
 
 
 class RawSmoothedKineTorsoPlotter:
@@ -111,3 +111,38 @@ class RawSmoothedKineTorsoPlotter:
                    ncol=2, handlelength=0.75, handletextpad=0.25, columnspacing=0.5, loc='upper left')
         make_interactive()
         return fig
+
+
+class MarkerClusterAvailPlotter:
+    """Plotter for visually determining when markers in a marker clustser are present in a trial.
+
+    Attributes
+    ----------
+    marker_data: numpy.ndarray (M, N, 3)
+        marker position data for all M markers and N frames in a trial
+    marker_names: List of str
+        list of marker names in marker cluster
+    vicon_endpts: array_like (2,)
+        The frame indices (endpoints) of the Vicon trial that correspond to the endpoints of the reciprocal
+        biplane fluoroscopy trial.
+    """
+
+    def __init__(self, marker_data: np.ndarray, marker_names: List[str], vicon_endpts: np.ndarray, trial_name: str):
+        self.marker_data = marker_data
+        self.marker_names = marker_names
+        self.vicon_endpts = vicon_endpts
+        self.trial_name = trial_name
+        self.frame_nums = np.arange(self.marker_data.shape[1]) + 1
+
+    def plot(self) -> List[matplotlib.figure.Figure]:
+        fig = plt.figure()
+        ax = fig.subplots(1, 1)
+        present_lines, absent_lines = plot_marker_cluster_avail(ax, self.marker_data, self.frame_nums,
+                                                                self.marker_names, self.vicon_endpts)
+        plt.tight_layout()
+        fig.suptitle(self.trial_name)
+        plt.subplots_adjust(top=0.95)
+        fig.legend((present_lines[0], absent_lines[0]), ('Present', 'Absent'), ncol=2, handlelength=0.75,
+                   handletextpad=0.5, columnspacing=1.0, loc='upper right')
+        make_interactive()
+        return [fig]

@@ -4,7 +4,7 @@ import matplotlib.lines
 import matplotlib.axes
 import matplotlib.ticker as ticker
 import numpy as np
-from typing import List
+from typing import List, Collection, Tuple
 from pythonGraphingLibrary import plotUtils
 
 
@@ -48,3 +48,33 @@ def kine_graph_add(ax: matplotlib.axes.Axes, marker_data: np.ndarray, x_data: np
         lines.append(current_line)
 
     return lines
+
+
+def plot_marker_cluster_avail(ax: matplotlib.axes.Axes, marker_data: np.ndarray, frame_nums: np.ndarray,
+                              marker_names: Collection[str], vicon_endpts: np.ndarray, **kwargs) \
+        -> Tuple[List[matplotlib.lines.Line2D], List[matplotlib.lines.Line2D]]:
+    """Create plot showing the presence of each marker in a marker cluster."""
+    marker_ints = np.arange(len(marker_names))
+    markers_present = ~np.any(np.isnan(marker_data), 2)
+    lines_present = []
+    lines_absent = []
+    for i in marker_ints:
+        marker_present = markers_present[i]
+        line_present = ax.plot(frame_nums[marker_present], np.ones(np.count_nonzero(marker_present)) * (i+1), 'g',
+                               lw=6, **kwargs)
+        line_absent = ax.plot(frame_nums[~marker_present], np.ones(np.count_nonzero(~marker_present)) * (i + 1), 'r',
+                              lw=6, **kwargs)
+        lines_present.append(line_present[0])
+        lines_absent.append(line_absent[0])
+
+    ax.set_yticks(marker_ints + 1)
+    ax.set_yticklabels(marker_names)
+    plotUtils.update_spines(ax)
+    plotUtils.update_xticks(ax, font_size=8)
+    plotUtils.update_yticks(ax, fontsize=8)
+    plotUtils.update_xlabel(ax, 'Frame Number', font_size=10)
+
+    ax.axvline(vicon_endpts[0] + 1)
+    ax.axvline(vicon_endpts[1])
+
+    return lines_present, lines_absent
