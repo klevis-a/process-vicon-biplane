@@ -24,3 +24,18 @@ def smoothing_exceptions_for_marker(file_name: Union[str, Path], trial_name: str
     (trial_name)."""
     all_exceptions = read_smoothing_exceptions(file_name)
     return marker_smoothing_exceptions(all_exceptions, trial_name, marker_name)
+
+
+def read_filling_directives(file_name: Union[str, Path]) -> Dict[str, Any]:
+    """Read the filling directives file and create a nested dictionary from it."""
+    return read_smoothing_exceptions(file_name)
+
+
+def trial_filling_directives(all_directives: Dict[str, any], trial_name: str) -> Dict[str, any]:
+    """Give all directives (all_directives) return just the ones for the specified trial (trial_name)."""
+    return all_directives.get(trial_name, {})
+
+
+def filling_directives_for_trial(file_name: Union[str, Path], trial_name: str) -> Dict[str, any]:
+    """Read the filling directives file and return just the ones for the specified trial (trial_name)."""
+    return trial_filling_directives(read_filling_directives(file_name), trial_name)

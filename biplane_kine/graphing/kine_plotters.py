@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.figure
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from .common_graph_utils import make_interactive
 from .smoothing_graph_utils import marker_graph_init, marker_graph_add
 from .kine_graph_utils import kine_graph_init, kine_graph_add, plot_marker_cluster_avail
@@ -146,3 +146,71 @@ class MarkerClusterAvailPlotter:
                    handletextpad=0.5, columnspacing=1.0, loc='upper right')
         make_interactive()
         return [fig]
+
+
+class MarkerClusterFillPlotter(MarkerClusterAvailPlotter):
+    """Plotter for visually demonstrating filled gaps and the markers utilized to fill them.
+
+    Attributes
+    ----------
+    gaps_filled: dict of marker names to gaps
+        Dictionary containing the gaps that were filled for each marker
+    source_markers: dict of marker names to source markers
+        Dictionary containing the source markers that were utilized to fill gaps for each marker
+    filled_data: dict of marker names to filled marker trajectories
+        Dictionary containing the filled marker trajectory for each marker
+    sfs_data: dict of marker names to smoothed/filled/smoothed marker trajectories
+        Dictionary containing the smoothed/filled/smoothed marker trajectory for each marker
+    """
+    def __init__(self, marker_data: np.ndarray, marker_names: List[str], gaps_filled: Dict[str, List[Tuple[int, int]]],
+                 source_markers: Dict[str, List[str]], filled_data: Dict[str, np.ndarray],
+                 sfs_data: Dict[str, np.ndarray], vicon_endpts: np.ndarray, trial_name: str):
+        super().__init__(marker_data, marker_names, vicon_endpts, trial_name)
+        self.gaps_filled = gaps_filled
+        self.source_markers = source_markers
+        self.filled_data = filled_data
+        self.sfs_data = sfs_data
+
+    def plot(self) -> List[matplotlib.figure.Figure]:
+        fig = super().plot()[0]
+        ax_fig = fig.axes[0]
+
+        # add gap demarcation lines and source marker names for marker that was filled
+        for (idx, marker_name) in enumerate(self.marker_names):
+            if marker_name in self.gaps_filled:
+                gaps = self.gaps_filled[marker_name]
+                for gap in gaps:
+                    ax_fig.vlines([gap[0] + 1, gap[1]], ymin=(idx + 1) - 0.2, ymax=(idx + 1) + 0.2, linewidths=6,
+                                  colors=(1, 0.5, 0))
+                max_gap_idx = np.argmax([gap[1] - gap[0] for gap in gaps])
+                ax_fig.text((gaps[max_gap_idx][0] + gaps[max_gap_idx][1])/2, idx + 1 + 0.25,
+                            ','.join(self.source_markers[marker_name]), horizontalalignment='center',
+                            verticalalignment='bottom', fontweight='bold')
+
+        # create a figure for each marker that was filled
+        figs = self.plot_filled_trajectory(2)
+
+        return [fig] + figs
+
+    def plot_filled_trajectory(self, fig_start) -> List[matplotlib.figure.Figure]:
+        figs = []
+        for (idx, (marker_name, filled_marker_data)) in enumerate(self.filled_data.items()):
+            fig = plt.figure(fig_start + idx)
+            ax = fig.subplots(3, 1)
+            filled_lines = marker_graph_init(ax, filled_marker_data, 'Position (mm)', self.frame_nums, color='red')
+            smoothed_lines = marker_graph_add(ax, self.marker_data[self.marker_names.index(marker_name)],
+                                              self.frame_nums, color='blue')
+            sfs_lines = marker_graph_add(ax, self.sfs_data[marker_name], self.frame_nums, color='green')
+            highlight_sfs = np.full_like(self.sfs_data[marker_name], np.nan)
+            gaps = self.gaps_filled[marker_name]
+            for gap in gaps:
+                highlight_sfs[gap[0]:gap[1], :] = self.sfs_data[marker_name][gap[0]:gap[1], :]
+            high_sfs_lines = marker_graph_add(ax, highlight_sfs, self.frame_nums, color='orange')
+            plt.tight_layout()
+            fig.suptitle(self.trial_name + ' ' + marker_name, x=0.75)
+            fig.legend((filled_lines[0], smoothed_lines[0], sfs_lines[0], high_sfs_lines[0]),
+                       ('Filled Raw', 'Smoothed', 'SFS', 'Filled Smoothed'), ncol=4, handlelength=0.75,
+                       handletextpad=0.25, columnspacing=0.5, loc='lower left')
+            make_interactive()
+            figs.append(fig)
+        return figs
