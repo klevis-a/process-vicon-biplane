@@ -93,14 +93,15 @@ def post_process_raw(marker_pos_labeled: np.ndarray, marker_pos_filled: np.ndarr
 
 
 def kf_filter_marker_piece(marker_pos_labeled: np.ndarray, marker_pos_filled: np.ndarray, piece_start: int,
-                           piece_stop: Union[int, None], dt: float) -> Tuple[FilterStep, FilterStep]:
+                           piece_stop: Union[int, None], dt: float, white_noise_var: float = 10000)\
+        -> Tuple[FilterStep, FilterStep]:
     """Filter raw (labeled) Vicon marker data starting at frame piece_start and ending at frame piece_end."""
     pos_labeled_piece = marker_pos_labeled[piece_start:piece_stop, :]
     pos_filled_piece = marker_pos_filled[piece_start:piece_stop, :]
     x0, start_idx, stop_idx = x0_guess(pos_labeled_piece, pos_filled_piece, dt, 50, 10)
     # guess for initial covariance, showing increasing uncertainty for velocity and acceleration
     p = np.tile(np.diag([1, 100, 1000]), (3, 1, 1))
-    kf = LinearKF1DSimdKalman(dt=dt, discrete_white_noise_var=10000, r=1)
+    kf = LinearKF1DSimdKalman(dt=dt, discrete_white_noise_var=white_noise_var, r=1)
     filtered_means, smoothed_means, filtered_covs, smoothed_covs = \
         kf.filter_marker(pos_labeled_piece[start_idx:stop_idx, :], x0, p)
 
@@ -116,15 +117,15 @@ def kf_filter_marker_piece(marker_pos_labeled: np.ndarray, marker_pos_filled: np
     return filtered, smoothed
 
 
-def kf_filter_marker_all(marker_pos_labeled: np.ndarray, marker_pos_filled: np.ndarray, dt: float) \
-        -> Tuple[FilterStep, FilterStep]:
+def kf_filter_marker_all(marker_pos_labeled: np.ndarray, marker_pos_filled: np.ndarray, dt: float,
+                         white_noise_var: float = 10000) -> Tuple[FilterStep, FilterStep]:
     """Filter raw (labeled) Vicon marker data."""
-    return kf_filter_marker_piece(marker_pos_labeled, marker_pos_filled, 0, None, dt)
+    return kf_filter_marker_piece(marker_pos_labeled, marker_pos_filled, 0, None, dt, white_noise_var)
 
 
 def kf_filter_marker_piecewise(marker_pos_labeled: np.ndarray, marker_pos_filled: np.ndarray, dt: float,
-                               max_gap: int = 75, max_gap_secondary: Tuple[int, int] = (30, 10), min_length: int = 75) \
-        -> Tuple[List[FilterStep], List[FilterStep]]:
+                               max_gap: int = 75, max_gap_secondary: Tuple[int, int] = (30, 10), min_length: int = 75,
+                               white_noise_var: float = 10000) -> Tuple[List[FilterStep], List[FilterStep]]:
     """Filter raw (labeled) Vicon marker data, accounting for gaps.
 
     There are two conditions that create a gap:
@@ -228,7 +229,8 @@ def kf_filter_marker_piecewise(marker_pos_labeled: np.ndarray, marker_pos_filled
 
         log.info('Filtering piece %d running from %d to %d ', i, pieces_start_idx[i], pieces_end_idx[i])
         piece_filtered, piece_smoothed = kf_filter_marker_piece(marker_pos_labeled, marker_pos_filled,
-                                                                pieces_start_idx[i], pieces_end_idx[i], dt)
+                                                                pieces_start_idx[i], pieces_end_idx[i], dt,
+                                                                white_noise_var)
         filtered_pieces.append(piece_filtered)
         smoothed_pieces.append(piece_smoothed)
 
@@ -281,7 +283,7 @@ def combine_pieces(pieces: List[FilterStep]) -> FilterStep:
 
 
 def piecewise_filter_with_exception(marker_exceptions: Dict[str, Any], marker_pos_labeled: np.ndarray,
-                                    marker_pos_filled: np.ndarray, dt: float, **kwargs) \
+                                    marker_pos_filled: np.ndarray, dt: float, white_noise_var: float = 10000, **kwargs)\
         -> Tuple[FilterStep, FilterStep, FilterStep, FilterStep]:
     """Filter marker position data (accounting for gaps) and for exceptions specified in in marker_exceptions.
 
@@ -308,6 +310,7 @@ def piecewise_filter_with_exception(marker_exceptions: Dict[str, Any], marker_po
     combined_smoothing_params = {**kwargs, **smoothing_params}
     raw, filled = post_process_raw(marker_pos_labeled, marker_pos_filled, dt)
     filtered_pieces, smoothed_pieces = kf_filter_marker_piecewise(marker_pos_labeled_copy, marker_pos_filled, dt,
+                                                                  white_noise_var=white_noise_var,
                                                                   **combined_smoothing_params)
     filtered = combine_pieces(filtered_pieces)
     smoothed = combine_pieces(smoothed_pieces)
