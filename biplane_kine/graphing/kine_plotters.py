@@ -206,6 +206,8 @@ class MarkerClusterFillPlotter(MarkerClusterAvailPlotter):
             for gap in gaps:
                 highlight_sfs[gap[0]:gap[1], :] = self.sfs_data[marker_name][gap[0]:gap[1], :]
             high_sfs_lines = marker_graph_add(ax, highlight_sfs, self.frame_nums, color='orange')
+            for sub_ax in ax:
+                sub_ax.set_xlim(left=1)
             plt.tight_layout()
             fig.suptitle(self.trial_name + ' ' + marker_name, x=0.75)
             fig.legend((filled_lines[0], smoothed_lines[0], sfs_lines[0], high_sfs_lines[0]),

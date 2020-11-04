@@ -55,10 +55,11 @@ if __name__ == '__main__':
             _, _, _, smoothed = piecewise_filter_with_exception({}, filled_marker, filled_marker, db.attrs['dt'],
                                                                 white_noise_var=100000)
             filled_data[marker_name] = filled_marker
-            sfs_data[marker_name] = smoothed.means.pos
+            sfs_data[marker_name] = np.full_like(filled_marker, np.nan)
+            sfs_data[marker_name][smoothed.endpts[0]:smoothed.endpts[1], :] = smoothed.means.pos
 
-        raw_marker_data = np.stack([trial.smoothed[marker_name] for marker_name in marker_nms], 0)
-        return MarkerClusterFillPlotter(raw_marker_data, marker_names, gaps_filled, markers_to_fill, filled_data,
+        smooth_marker_data = np.stack([trial.smoothed[marker_name] for marker_name in marker_nms], 0)
+        return MarkerClusterFillPlotter(smooth_marker_data, marker_names, gaps_filled, markers_to_fill, filled_data,
                                         sfs_data, trial.vicon_endpts, trial.trial_name)
 
     # ready db
