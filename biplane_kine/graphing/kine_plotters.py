@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.figure
 from typing import List, Dict, Tuple
+from pythonGraphingLibrary import plotUtils
 from .common_graph_utils import make_interactive
 from .smoothing_graph_utils import marker_graph_init, marker_graph_add
 from .kine_graph_utils import kine_graph_init, kine_graph_add, plot_marker_cluster_avail
@@ -216,3 +217,78 @@ class MarkerClusterFillPlotter(MarkerClusterAvailPlotter):
             make_interactive()
             figs.append(fig)
         return figs
+
+
+class TorsoTrajComparisonPlotter:
+    """Torso trajectory plotter comparing previously filled, smoothed, smoothed/filled, and smoothed/filled/smoothed
+    torso kinematics.
+
+    Attributes
+    ----------
+    trial_name: str
+        Name of trial
+    prev_filled: tuple of numpy.ndarray (N, 3)
+        Torso position and Euler angles derived from marker position data that had been filled in Vicon
+    smoothed: tuple of numpy.ndarray (N, 3)
+        Torso position and Euler angles derived from smoothed marker position data
+    filled: tuple of numpy.ndarray (N, 3)
+        Torso position and Euler angles dervied from smoothed then filled marker position data
+    sfs: tuple of numpy.ndarray (N, 3)
+        Torso position and Euler angles dervied from smoothed, filled, then smoothed again (lightly)
+        marker position data
+    frame_nums: numpy.ndarray (N,)
+        Frame numbers for the trial
+    vicon_endpts: array_like (2,)
+        The frame indices (endpoints) of the Vicon trial that correspond to the endpoints of the reciprocal
+        biplane fluoroscopy trial.
+    """
+    def __init__(self, trial_name, prev_filled, smoothed, filled, sfs, vicon_endpts):
+        self.trial_name = trial_name
+        self.prev_filled = prev_filled
+        self.smoothed = smoothed
+        self.filled = filled
+        self.sfs = sfs
+        self.frame_nums = np.arange(self.sfs[0].shape[0]) + 1
+        self.vicon_endpts = vicon_endpts
+
+    def plot(self) -> List[matplotlib.figure.Figure]:
+        """Plot torso position and orientation trajectory as derived from previously filled, smoothed,
+        smoothed then filled, and smoothed/filled/smoothed skin marker position.
+
+        Figures:
+        1. Torso position broken out into 3 separate subplots for each spatial dimension
+        2. Torso orientation broken out into 3 separate subplots for each spatial dimension
+        """
+        figs = []
+        # Figure 1: Position
+        fig = self.plot_kine_var(1, self.trial_name, ('X (mm)', 'Y (mm)', 'Z (mm)'), self.prev_filled[0],
+                                 self.smoothed[0], self.filled[0], self.sfs[0])
+        figs.append(fig)
+
+        # Figure 2: Orientation
+        fig = self.plot_kine_var(2, self.trial_name, ('Flex/Ext (deg)', 'Lat Flex (deg)', 'Axial (deg)'),
+                                 self.prev_filled[1], self.smoothed[1], self.filled[1], self.sfs[1])
+        figs.append(fig)
+
+        return figs
+
+    def plot_kine_var(self, fig_num: int, title: str, y_labels: Tuple[str, str, str], prev_filled: np.ndarray,
+                      smoothed: np.ndarray, filled: np.ndarray, sfs: np.ndarray) -> matplotlib.figure.Figure:
+        """Plot torso position or orientation on one axes with different colors for each spatial dimension."""
+        fig = plt.figure(fig_num)
+        ax = fig.subplots(3, 1)
+        prev_filled_lines = marker_graph_init(ax, prev_filled, '', self.frame_nums, color='red')
+        smoothed_lines = marker_graph_add(ax, smoothed, self.frame_nums, color='blue')
+        smoothed_filled_lines = marker_graph_add(ax, filled, self.frame_nums, ls=':', lw=2, color='green')
+        sfs_lines = marker_graph_add(ax, sfs, self.frame_nums, color='green')
+        for idx, sub_ax in enumerate(ax):
+            plotUtils.update_ylabel(sub_ax, y_labels[idx], font_size=10)
+            sub_ax.axvline(self.vicon_endpts[0])
+            sub_ax.axvline(self.vicon_endpts[1])
+        plt.tight_layout()
+        fig.suptitle(title)
+        fig.legend((prev_filled_lines[0], smoothed_lines[0], smoothed_filled_lines[0], sfs_lines[0]),
+                   ('Prev Filled', 'Smoothed', 'Smoothed/Filled', 'SFS'),
+                   ncol=4, handlelength=0.75, handletextpad=0.25, columnspacing=0.5, loc='lower left')
+        make_interactive()
+        return fig
