@@ -15,6 +15,8 @@ import numpy as np
 from biplane_kine.kinematics.cs import change_cs, ht_inv
 from biplane_kine.kinematics.euler_angles import zxy_intrinsic
 from biplane_kine.graphing.kine_plotters import RawSmoothedKineTorsoPlotter
+from biplane_kine.kinematics.kine_trajectory import compute_trajectory
+from biplane_kine.kinematics.segments import StaticTorsoSegment
 import logging
 
 log = logging.getLogger(__name__)
@@ -23,8 +25,12 @@ log = logging.getLogger(__name__)
 def trial_plotter(trial_row):
     log.info('Processing trial %s', trial_row['Trial_Name'])
 
-    def process_trial(trial, base_frame_inv=None):
-        torso_truncated = trial.torso_fluoro[trial.vicon_endpts[0]:trial.vicon_endpts[1]]
+    def process_trial(trial, torso_source, base_frame_inv=None):
+        tracking_markers = np.stack([getattr(trial, torso_source)[marker]
+                                     for marker in StaticTorsoSegment.TRACKING_MARKERS], 0)
+        torso_vicon = compute_trajectory(trial.subject.torso.static_markers_intrinsic, tracking_markers)
+        torso_fluoro = change_cs(trial.subject.f_t_v, torso_vicon)
+        torso_truncated = torso_fluoro[trial.vicon_endpts[0]:trial.vicon_endpts[1]]
         present_frames = np.nonzero(~np.any(np.isnan(torso_truncated), (-2, -1)))[0]
         if present_frames.size == 0:
             num_frames = trial.vicon_endpts[1] - trial.vicon_endpts[0]
@@ -39,12 +45,13 @@ def trial_plotter(trial_row):
             torso_eul = np.rad2deg(zxy_intrinsic(torso_intrinsic))
         return torso_pos, torso_eul, base_frame_inv
 
-    torso_pos_smoothed, torso_eul_smoothed, base_inv = process_trial(trial_row['Smoothed_Trial'])
-    torso_pos_labeled, torso_eul_labeled, _ = process_trial(trial_row['Labeled_Trial'], base_inv)
-    torso_pos_filled, torso_eul_filled, _ = process_trial(trial_row['Filled_Trial'], base_inv)
+    trial = trial_row['Trial']
+    torso_pos_smoothed, torso_eul_smoothed, base_inv = process_trial(trial, 'smoothed')
+    torso_pos_labeled, torso_eul_labeled, _ = process_trial(trial, 'labeled', base_inv)
+    torso_pos_filled, torso_eul_filled, _ = process_trial(trial, 'filled', base_inv)
 
     # graph
-    frame_nums = np.arange(trial_row['Smoothed_Trial'].vicon_endpts[0], trial_row['Smoothed_Trial'].vicon_endpts[1]) + 1
+    frame_nums = np.arange(trial.vicon_endpts[0], trial.vicon_endpts[1]) + 1
     return RawSmoothedKineTorsoPlotter(trial_row['Trial_Name'], torso_pos_labeled, torso_eul_labeled, torso_pos_filled,
                                        torso_eul_filled, torso_pos_smoothed, torso_eul_smoothed, frame_nums)
 
@@ -54,14 +61,12 @@ if __name__ == '__main__':
         print('Use -m option to run this library module as a script.')
 
     from pathlib import Path
-    import pandas as pd
-    from typing import Union
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
     from ..general.arg_parser import mod_arg_parser
     from biplane_kine.graphing.common_graph_utils import init_graphing
     from biplane_kine.database import create_db, anthro_db
-    from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject, BiplaneViconSubjectV3D, BiplaneViconTrial
+    from biplane_kine.database.biplane_vicon_db import BiplaneViconSubjectV3D
     from biplane_kine.misc.json_utils import Params
     from logging.config import fileConfig
 
@@ -81,28 +86,7 @@ if __name__ == '__main__':
     def armpit_thickness(subj_name):
         return anthro.loc[subj_name, 'Armpit_Thickness']
 
-    class BiplaneViconTrialLabeled(BiplaneViconTrial):
-        def __init__(self, trial_dir: Union[str, Path], subject: BiplaneViconSubject, nan_missing_markers: bool = True,
-                     **kwargs):
-            super().__init__(trial_dir, subject, nan_missing_markers, **kwargs)
-            self.torso_source = 'labeled'
-
-
-    class BiplaneViconTrialFilled(BiplaneViconTrial):
-        def __init__(self, trial_dir: Union[str, Path], subject: BiplaneViconSubject, nan_missing_markers: bool = True,
-                     **kwargs):
-            super().__init__(trial_dir, subject, nan_missing_markers, **kwargs)
-            self.torso_source = 'filled'
-
-    db_smoothed = create_db(params.biplane_vicon_db_dir, BiplaneViconSubjectV3D, armpit_thickness=armpit_thickness)
-    db_labeled = create_db(params.biplane_vicon_db_dir, BiplaneViconSubjectV3D, armpit_thickness=armpit_thickness,
-                           trial_class=BiplaneViconTrialLabeled)
-    db_filled = create_db(params.biplane_vicon_db_dir, BiplaneViconSubjectV3D, armpit_thickness=armpit_thickness,
-                          trial_class=BiplaneViconTrialFilled)
-    db = pd.DataFrame({'Trial_Name': db_smoothed['Trial_Name'], 'Subject_Name': db_smoothed['Subject_Name'],
-                       'Labeled_Trial': db_labeled['Trial'], 'Filled_Trial': db_filled['Trial'],
-                       'Smoothed_Trial': db_smoothed['Trial']}, index=db_smoothed['Trial_Name'])
-
+    db = create_db(params.biplane_vicon_db_dir, BiplaneViconSubjectV3D, armpit_thickness=armpit_thickness)
     db['Plotter'] = db.apply(trial_plotter, axis=1)
 
     # create plots

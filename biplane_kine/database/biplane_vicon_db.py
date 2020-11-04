@@ -8,10 +8,9 @@ import pandas as pd
 from lazy import lazy
 from typing import Union, Callable, Type
 from scipy.spatial.transform import Rotation
-from ..kinematics.kine_trajectory import compute_trajectory
 from ..kinematics.joint_cs import torso_cs_isb, torso_cs_v3d
 from ..kinematics.segments import StaticTorsoSegment
-from ..kinematics.cs import ht_r, change_cs
+from ..kinematics.cs import ht_r
 from .db_common import TrialDescription, ViconEndpts, SubjectDescription, ViconCSTransform, trial_descriptor_df, MARKERS
 from ..misc.python_utils import NestedDescriptor
 
@@ -149,7 +148,6 @@ class BiplaneViconTrial(ViconCsvTrial):
     def __init__(self, trial_dir: Union[str, Path], subject: 'BiplaneViconSubject', nan_missing_markers: bool = True,
                  **kwargs):
         super().__init__(trial_dir, nan_missing_markers, **kwargs)
-        self.torso_source = 'smoothed'
         self.subject = subject
         # file paths
         self.vicon_csv_file_smoothed = self.trial_dir_path / (self.trial_name + '_vicon_smoothed.csv')
@@ -172,18 +170,6 @@ class BiplaneViconTrial(ViconCsvTrial):
         """Descriptor that allows marker indexed ([marker_name]) access to smoothed CSV data. The indexed access returns
         a (n, 3) numpy array view."""
         return NestedDescriptor(self.vicon_csv_data_smoothed, csv_get_item_method)
-
-    @lazy
-    def torso_vicon(self) -> np.ndarray:
-        """Torso frame trajectory (N, 4, 4) in Vicon reference frame."""
-        tracking_markers = np.stack([getattr(self, self.torso_source)[marker]
-                                     for marker in StaticTorsoSegment.TRACKING_MARKERS], 0)
-        return compute_trajectory(self.subject.torso.static_markers_intrinsic, tracking_markers)
-
-    @lazy
-    def torso_fluoro(self) -> np.ndarray:
-        """Torso frame trajectory (N, 4, 4) in biplane fluoroscopy reference frame."""
-        return change_cs(self.subject.f_t_v, self.torso_vicon)
 
     @lazy
     def humerus_biplane_data(self) -> pd.DataFrame:

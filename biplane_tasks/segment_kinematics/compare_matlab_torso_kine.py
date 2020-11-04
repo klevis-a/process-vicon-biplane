@@ -8,7 +8,6 @@ biplane_vicon_db_dir: Path to the directory containing Vicon skin marker data.
 matlab_threejs_dir: Path to directory for matlab has exported data for three.js
 trial_name: the name of the trial to perform comparisons for
 """
-from typing import Union
 
 if __name__ == '__main__':
     if __package__ is None:
@@ -22,8 +21,11 @@ if __name__ == '__main__':
     from ..general.arg_parser import mod_arg_parser
     from biplane_kine.graphing.common_graph_utils import init_graphing, make_interactive
     from biplane_kine.kinematics.vec_ops import extended_dot
+    from biplane_kine.kinematics.cs import change_cs
+    from biplane_kine.kinematics.segments import StaticTorsoSegment
+    from biplane_kine.kinematics.kine_trajectory import compute_trajectory
     from biplane_kine.database import create_db, anthro_db
-    from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject, BiplaneViconSubjectV3D, BiplaneViconTrial
+    from biplane_kine.database.biplane_vicon_db import BiplaneViconSubjectV3D
     from biplane_kine.misc.json_utils import Params
     import logging
     from logging.config import fileConfig
@@ -43,20 +45,16 @@ if __name__ == '__main__':
     def armpit_thickness(subject_name):
         return anthro.loc[subject_name, 'Armpit_Thickness']
 
-    class BiplaneViconTrialFilled(BiplaneViconTrial):
-        def __init__(self, trial_dir: Union[str, Path], subject: BiplaneViconSubject, nan_missing_markers: bool = True,
-                     **kwargs):
-            super().__init__(trial_dir, subject, nan_missing_markers, **kwargs)
-            self.torso_source = 'filled'
-
-    db = create_db(params.biplane_vicon_db_dir, BiplaneViconSubjectV3D, armpit_thickness=armpit_thickness,
-                   trial_class=BiplaneViconTrialFilled)
+    db = create_db(params.biplane_vicon_db_dir, BiplaneViconSubjectV3D, armpit_thickness=armpit_thickness)
 
     # retrieve trial information
     trial_row = db.loc[params.trial_name]
     subject_id = trial_row['Subject_Name']
     trial = trial_row['Trial']
-    torso_truncated = trial.torso_fluoro[trial.vicon_endpts[0]:trial.vicon_endpts[1]]
+    tracking_markers = np.stack([trial.filled[marker] for marker in StaticTorsoSegment.TRACKING_MARKERS], 0)
+    torso_vicon = compute_trajectory(trial.subject.torso.static_markers_intrinsic, tracking_markers)
+    torso_fluoro = change_cs(trial.subject.f_t_v, torso_vicon)
+    torso_truncated = torso_fluoro[trial.vicon_endpts[0]:trial.vicon_endpts[1]]
     torso_pos_quat = np.concatenate((torso_truncated[:, :3, 3],
                                      Rot.from_matrix(torso_truncated[:, :3, :3]).as_quat()), 1)
 
