@@ -25,7 +25,7 @@ if __name__ == '__main__':
     from biplane_kine.kinematics.segments import StaticTorsoSegment
     from biplane_kine.kinematics.cs import ht_inv, change_cs
     from biplane_kine.kinematics.euler_angles import zxy_intrinsic
-    from biplane_kine.kinematics.kine_trajectory import compute_trajectory
+    from biplane_kine.kinematics.kine_trajectory import compute_trajectory, compute_trajectory_continuous
     from biplane_kine.graphing.common_graph_utils import init_graphing
     from biplane_kine.graphing.kine_plotters import TorsoTrajComparisonPlotter
     from ..general.arg_parser import mod_arg_parser
@@ -65,8 +65,8 @@ if __name__ == '__main__':
             sfs_data[smoothed.endpts[0]:smoothed.endpts[1], :] = smoothed.means.pos
             sfs_marker_pos[marker_idx] = sfs_data
 
-        def process_trial(static_markers, tracking_markers, base_frame_inv=None):
-            torso_traj = compute_trajectory(static_markers, tracking_markers)
+        def process_trial(static_markers, tracking_markers, traj_func, base_frame_inv=None):
+            torso_traj = traj_func(static_markers, tracking_markers)
             present_frames = np.nonzero(~np.any(np.isnan(torso_traj), (-2, -1)))[0]
             if present_frames.size == 0:
                 num_frames = tracking_markers.shape[1]
@@ -82,10 +82,10 @@ if __name__ == '__main__':
             return (torso_pos, torso_eul), base_frame_inv
 
         stat_markers = trial.subject.torso.static_markers_intrinsic
-        torso_kine_smooth, base_inv = process_trial(stat_markers, smooth_marker_pos)
-        torso_kine_sfs, _ = process_trial(stat_markers, sfs_marker_pos, base_inv)
-        torso_kine_filled, _ = process_trial(stat_markers, filled_marker_pos, base_inv)
-        torso_kine_prev_filled, _ = process_trial(stat_markers, prev_filled_marker_pos, base_inv)
+        torso_kine_smooth, base_inv = process_trial(stat_markers, smooth_marker_pos, compute_trajectory)
+        torso_kine_sfs, _ = process_trial(stat_markers, sfs_marker_pos, compute_trajectory_continuous, base_inv)
+        torso_kine_filled, _ = process_trial(stat_markers, filled_marker_pos, compute_trajectory_continuous, base_inv)
+        torso_kine_prev_filled, _ = process_trial(stat_markers, prev_filled_marker_pos, compute_trajectory, base_inv)
 
         return TorsoTrajComparisonPlotter(trial.trial_name, torso_kine_prev_filled, torso_kine_smooth,
                                           torso_kine_filled, torso_kine_sfs, trial.vicon_endpts)

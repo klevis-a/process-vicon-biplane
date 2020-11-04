@@ -285,6 +285,7 @@ class TorsoTrajComparisonPlotter:
             plotUtils.update_ylabel(sub_ax, y_labels[idx], font_size=10)
             sub_ax.axvline(self.vicon_endpts[0])
             sub_ax.axvline(self.vicon_endpts[1])
+            sub_ax.set_xlim(left=1)
         plt.tight_layout()
         fig.suptitle(title)
         fig.legend((prev_filled_lines[0], smoothed_lines[0], smoothed_filled_lines[0], sfs_lines[0]),
