@@ -60,10 +60,10 @@ def plot_marker_cluster_avail(ax: matplotlib.axes.Axes, marker_data: np.ndarray,
     lines_absent = []
     for i in marker_ints:
         marker_present = markers_present[i]
-        line_present = ax.plot(frame_nums[marker_present], np.ones(np.count_nonzero(marker_present)) * (i+1), 'g',
-                               lw=6, **kwargs)
-        line_absent = ax.plot(frame_nums[~marker_present], np.ones(np.count_nonzero(~marker_present)) * (i + 1), 'r',
-                              lw=6, **kwargs)
+        line_present = ax.plot(frame_nums[marker_present], np.ones(np.count_nonzero(marker_present)) * (i+1), 'gs',
+                               ms=6, ls='', **kwargs)
+        line_absent = ax.plot(frame_nums[~marker_present], np.ones(np.count_nonzero(~marker_present)) * (i + 1), 'rs',
+                              ms=6, ls='', **kwargs)
         lines_present.append(line_present[0])
         lines_absent.append(line_absent[0])
 
