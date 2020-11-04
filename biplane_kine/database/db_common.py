@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from lazy import lazy
 from scipy.spatial.transform import Rotation
-from typing import List, Union, Callable, Tuple
+from typing import Sequence, Union, Callable, Tuple
 from ..kinematics.cs import ht_r
 
 ACTIVITY_TYPES = ['CA', 'SA', 'FE', 'ERa90', 'ERaR', 'IRaB', 'IRaM', 'Static', 'WCA', 'WSA', 'WFE']
@@ -82,7 +82,7 @@ class TrialDescription:
         return subject, activity, trial_number
 
 
-def trial_descriptor_df(subject_name: str, trials: List[TrialDescription]) -> pd.DataFrame:
+def trial_descriptor_df(subject_name: str, trials: Sequence[TrialDescription]) -> pd.DataFrame:
     """Return a Pandas dataframe that contains commonly used fields from the trials supplied."""
     return pd.DataFrame({'Subject_Name': pd.Series([subject_name] * len(trials), dtype=pd.StringDtype()),
                          'Trial_Name': pd.Series([trial.trial_name for trial in trials], dtype=pd.StringDtype()),

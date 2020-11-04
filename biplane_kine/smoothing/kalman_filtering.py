@@ -1,7 +1,6 @@
 """This module contains utilities for performing Kalman filtering/smoothing of marker data."""
 
-from typing import NamedTuple, List, Tuple, Union
-from collections.abc import Sequence
+from typing import NamedTuple, Tuple, Union, List, Sequence
 import numpy as np
 import simdkalman
 from filterpy.common.discretization import Q_discrete_white_noise
@@ -108,7 +107,7 @@ CovIndices = {
 """Map from field names of CovarianceVec to corresponding indices in the covariance matrix."""
 
 
-def extract_covariances(covs: List[np.ndarray]) -> List[np.ndarray]:
+def extract_covariances(covs: Sequence[np.ndarray]) -> Sequence[np.ndarray]:
     """Extract covariances from covs [(n, 3, 3)_x, (n, 3, 3)_y, (n, 3, 3)_z] and return
     [(n, 3)_pos, (n, 3)_vel, (n, 3)_acc, (n, 3)_pos_vel, (n, 3)_pos_acc, (n, 3)_vel_acc]"""
     covariances = []
@@ -139,7 +138,7 @@ def extract_corrs(covariances: CovarianceVec) -> List[np.ndarray]:
     return correlations
 
 
-def extract_means(means: List[np.ndarray]) -> np.ndarray:
+def extract_means(means: Sequence[np.ndarray]) -> np.ndarray:
     """Extract means from means [(n, 3)_x (n, 3)_y (n, 3)_z] and return [(n, 3)_pos (n, 3)_vel (n, 3)_acc]"""
 
     # 1. start with means which is a list of (N, 3) numpy arrays, where the last dimension represents kinematic variable

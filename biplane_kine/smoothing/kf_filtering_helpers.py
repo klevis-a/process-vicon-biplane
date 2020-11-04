@@ -2,7 +2,7 @@ import numpy as np
 import itertools
 import distutils.util
 from operator import itemgetter
-from typing import Tuple, Union, List, Dict, Any
+from typing import Tuple, Union, Dict, Any, Sequence
 from scipy.signal import butter, sosfiltfilt
 from biplane_kine.smoothing.kalman_filtering import (LinearKF1DSimdKalman, FilterStep, StateMeans, CovarianceVec,
                                                      CorrVec, extract_corrs)
@@ -125,7 +125,7 @@ def kf_filter_marker_all(marker_pos_labeled: np.ndarray, marker_pos_filled: np.n
 
 def kf_filter_marker_piecewise(marker_pos_labeled: np.ndarray, marker_pos_filled: np.ndarray, dt: float,
                                max_gap: int = 75, max_gap_secondary: Tuple[int, int] = (30, 10), min_length: int = 75,
-                               white_noise_var: float = 10000) -> Tuple[List[FilterStep], List[FilterStep]]:
+                               white_noise_var: float = 10000) -> Tuple[Sequence[FilterStep], Sequence[FilterStep]]:
     """Filter raw (labeled) Vicon marker data, accounting for gaps.
 
     There are two conditions that create a gap:
@@ -240,7 +240,7 @@ def kf_filter_marker_piecewise(marker_pos_labeled: np.ndarray, marker_pos_filled
     return filtered_pieces, smoothed_pieces
 
 
-def combine_pieces(pieces: List[FilterStep]) -> FilterStep:
+def combine_pieces(pieces: Sequence[FilterStep]) -> FilterStep:
     """Combine multiple filtered pieces"""
     # the new endpoints runs from the start of the first piece to the end of the last piece
     endpts = (pieces[0].endpts[0], pieces[-1].endpts[1])

@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.figure
 import matplotlib.pyplot as plt
-from typing import List, Union, Sequence
+from typing import Union, Sequence, List
 from biplane_kine.graphing.smoothing_graph_utils \
     import (marker_graph_init, marker_graph_add, marker_graph_title, add_vicon_start_stop, marker_diff_his_init,
             marker_diff_his_add, marker_graph_add_cov, cov_trend_graph_init, cov_trend_graph_add)
@@ -264,7 +264,7 @@ class SmoothingDebugPlotter:
         make_interactive()
         return fig
 
-    def plot_cov(self, title: str, y_labels: List[str], fig_num: int) -> matplotlib.figure.Figure:
+    def plot_cov(self, title: str, y_labels: Sequence[str], fig_num: int) -> matplotlib.figure.Figure:
         """Plot overlayed variance of filtered and smoothed kinematic variables (position, velocity, acceleration) in
         separate rows with 3 columns for each spatial dimension (3x3). """
         fig = plt.figure(num=fig_num)
@@ -279,7 +279,7 @@ class SmoothingDebugPlotter:
         make_interactive()
         return fig
 
-    def plot_corr(self, title: str, y_labels: List[str], fig_num: int) -> matplotlib.figure.Figure:
+    def plot_corr(self, title: str, y_labels: Sequence[str], fig_num: int) -> matplotlib.figure.Figure:
         """Plot overlayed correlation of filtered and smoothed kinematic variables (position/velocity,
         position/acceleration, velocity/acceleration) in separate rows with 3 columns for each spatial
         dimension (3x3). """

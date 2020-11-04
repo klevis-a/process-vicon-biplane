@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def zxy_intrinsic(mat):
+def zxy_intrinsic(mat: np.ndarray) -> np.ndarray:
     """Return zxy intrinsic Euler angle decomposition of mat (.., 4, 4))"""
     # let's not consider cases where we have NaNs
     not_nan = ~np.any(np.isnan(mat), (-2, -1))

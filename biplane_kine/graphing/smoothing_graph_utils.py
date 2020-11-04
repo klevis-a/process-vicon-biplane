@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 from collections.abc import Iterable
-from typing import List, Callable, Any
+from typing import List, Sequence, Callable, Any
 from matplotlib import axes
 from pythonGraphingLibrary import plotUtils
 
@@ -105,7 +105,7 @@ def marker_diff_his_add(axs: np.ndarray, smoothed_diff: np.ndarray, color: str) 
     return polygons_smoothed
 
 
-def cov_trend_graph_init(ax: np.ndarray, variance_data: Any, x_data: np.ndarray, y_labels: List[str],
+def cov_trend_graph_init(ax: np.ndarray, variance_data: Any, x_data: np.ndarray, y_labels: Sequence[str],
                          process_func: Callable, **kwargs) -> List[List[matplotlib.lines.Line2D]]:
     """Plot each kinematic variable/dimension combination contained in variance_data (tuple of 3 kinematic variables,
     each comprised of a (n, 3) numpy array) onto the 3 rows (kinematic variable) and 3 columns (dimension) contained in

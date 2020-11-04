@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.figure
-from typing import List, Dict, Tuple
+from typing import List, Sequence, Dict, Tuple
 from pythonGraphingLibrary import plotUtils
 from .common_graph_utils import make_interactive
 from .smoothing_graph_utils import marker_graph_init, marker_graph_add
@@ -128,7 +128,7 @@ class MarkerClusterAvailPlotter:
         biplane fluoroscopy trial.
     """
 
-    def __init__(self, marker_data: np.ndarray, marker_names: List[str], vicon_endpts: np.ndarray, trial_name: str):
+    def __init__(self, marker_data: np.ndarray, marker_names: Sequence[str], vicon_endpts: np.ndarray, trial_name: str):
         self.marker_data = marker_data
         self.marker_names = marker_names
         self.vicon_endpts = vicon_endpts
@@ -163,9 +163,9 @@ class MarkerClusterFillPlotter(MarkerClusterAvailPlotter):
     sfs_data: dict of marker names to smoothed/filled/smoothed marker trajectories
         Dictionary containing the smoothed/filled/smoothed marker trajectory for each marker
     """
-    def __init__(self, marker_data: np.ndarray, marker_names: List[str], gaps_filled: Dict[str, List[Tuple[int, int]]],
-                 source_markers: Dict[str, List[str]], filled_data: Dict[str, np.ndarray],
-                 sfs_data: Dict[str, np.ndarray], vicon_endpts: np.ndarray, trial_name: str):
+    def __init__(self, trial_name: str, marker_data: np.ndarray, marker_names: Sequence[str],
+                 gaps_filled: Dict[str, Sequence[Tuple[int, int]]], source_markers: Dict[str, Sequence[str]],
+                 filled_data: Dict[str, np.ndarray], sfs_data: Dict[str, np.ndarray], vicon_endpts: np.ndarray):
         super().__init__(marker_data, marker_names, vicon_endpts, trial_name)
         self.gaps_filled = gaps_filled
         self.source_markers = source_markers
@@ -272,7 +272,7 @@ class TorsoTrajComparisonPlotter:
 
         return figs
 
-    def plot_kine_var(self, fig_num: int, title: str, y_labels: Tuple[str, str, str], prev_filled: np.ndarray,
+    def plot_kine_var(self, fig_num: int, title: str, y_labels: Sequence[str], prev_filled: np.ndarray,
                       smoothed: np.ndarray, filled: np.ndarray, sfs: np.ndarray) -> matplotlib.figure.Figure:
         """Plot torso position or orientation on one axes with different colors for each spatial dimension."""
         fig = plt.figure(fig_num)

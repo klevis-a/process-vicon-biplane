@@ -34,7 +34,7 @@ if __name__ == '__main__':
     from logging.config import fileConfig
 
     # initialize
-    config_dir = Path(mod_arg_parser('Batch plot torso marker kinematics', __package__, __file__))
+    config_dir = Path(mod_arg_parser('Batch plot torso kinematics', __package__, __file__))
     params = Params.get_params(config_dir / 'parameters.json')
 
     # logging

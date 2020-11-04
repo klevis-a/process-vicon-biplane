@@ -29,8 +29,7 @@ if __name__ == '__main__':
     from logging.config import fileConfig
 
     # initialize
-    config_dir = Path(mod_arg_parser('Batch plot filled torso marker cluster '
-                                     'record', __package__, __file__))
+    config_dir = Path(mod_arg_parser('Batch plot filled torso marker cluster', __package__, __file__))
     params = Params.get_params(config_dir / 'parameters.json')
 
     # logging
@@ -59,8 +58,8 @@ if __name__ == '__main__':
             sfs_data[marker_name][smoothed.endpts[0]:smoothed.endpts[1], :] = smoothed.means.pos
 
         smooth_marker_data = np.stack([trial.smoothed[marker_name] for marker_name in marker_nms], 0)
-        return MarkerClusterFillPlotter(smooth_marker_data, marker_names, gaps_filled, markers_to_fill, filled_data,
-                                        sfs_data, trial.vicon_endpts, trial.trial_name)
+        return MarkerClusterFillPlotter(trial.trial_name, smooth_marker_data, marker_names, gaps_filled,
+                                        markers_to_fill, filled_data, sfs_data, trial.vicon_endpts)
 
     # ready db
     root_path = Path(params.output_dir)

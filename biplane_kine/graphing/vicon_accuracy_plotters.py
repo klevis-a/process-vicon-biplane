@@ -2,7 +2,7 @@
 spatiotemporal syncing accuracy between the Vicon and biplane fluoroscopy systems ."""
 
 import numpy as np
-from typing import List
+from typing import Sequence, List
 import matplotlib.figure
 import matplotlib.pyplot as plt
 from biplane_kine.graphing.common_graph_utils import make_interactive
@@ -91,7 +91,8 @@ class ViconAccuracyPlotter:
         make_interactive()
         return fig
 
-    def plot_diff(self, title: str, fig_num: int, vicon_fields: List[str], diff_field: str) -> matplotlib.figure.Figure:
+    def plot_diff(self, title: str, fig_num: int, vicon_fields: Sequence[str], diff_field: str) \
+            -> matplotlib.figure.Figure:
         """Plot difference between marker position data as measured via Vicon and biplane fluoroscopy."""
         fig = plt.figure(num=fig_num)
         ax = fig.subplots(2, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1]})
