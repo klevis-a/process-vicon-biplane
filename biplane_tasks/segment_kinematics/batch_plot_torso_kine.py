@@ -41,7 +41,7 @@ if __name__ == '__main__':
     fileConfig(config_dir / 'logging.ini', disable_existing_loggers=False)
     log = logging.getLogger(params.logger_name)
 
-    def trial_plotter(trial, marker_names, filling_directives_all):
+    def trial_plotter(trial, marker_names, filling_directives_all, dt):
         log.info('Processing trial %s', trial.trial_name)
         markers_to_fill = trial_filling_directives(filling_directives_all, trial.trial_name)
 
@@ -59,7 +59,7 @@ if __name__ == '__main__':
             filled_marker_pos[marker_idx] = filled_marker
 
             # smooth
-            _, _, _, smoothed = piecewise_filter_with_exception({}, filled_marker, filled_marker, db.attrs['dt'],
+            _, _, _, smoothed = piecewise_filter_with_exception({}, filled_marker, filled_marker, dt,
                                                                 white_noise_var=100000)
             sfs_data = np.full_like(filled_marker, np.nan)
             sfs_data[smoothed.endpts[0]:smoothed.endpts[1], :] = smoothed.means.pos
@@ -93,8 +93,9 @@ if __name__ == '__main__':
     # ready db
     root_path = Path(params.output_dir)
     db = create_db(params.biplane_vicon_db_dir, BiplaneViconSubject)
-    db['Plotter'] = db['Trial'].apply(trial_plotter, args=[StaticTorsoSegment.TRACKING_MARKERS,
-                                                           read_filling_directives(params.filling_directives)])
+    db['Plotter'] = db['Trial'].apply(trial_plotter,
+                                      args=[StaticTorsoSegment.TRACKING_MARKERS,
+                                            read_filling_directives(params.filling_directives), db.attrs['dt']])
 
     # create plots
     init_graphing()
