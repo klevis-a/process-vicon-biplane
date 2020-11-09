@@ -18,8 +18,8 @@ def ht_inv(mat: np.ndarray) -> np.ndarray:
     """Return the inverse of the homogeneous transformation in mat."""
     mat_inv = np.zeros_like(mat)
     mat_inv[..., 3, 3] = 1
-    mat_inv[..., :3, :3] = np.transpose(mat[..., :3, :3], (-1, -2))
-    mat_inv[:3, 3] = -mat_inv[..., :3, :3] @ mat[..., :3, 3]
+    mat_inv[..., :3, :3] = np.swapaxes(mat[..., :3, :3], -1, -2)
+    mat_inv[..., :3, 3] = np.squeeze(-mat_inv[..., :3, :3] @ mat[..., :3, 3, np.newaxis])
     return mat_inv
 
 

@@ -10,12 +10,13 @@ from typing import Union, Callable, Type
 from scipy.spatial.transform import Rotation
 from ..kinematics.joint_cs import torso_cs_isb, torso_cs_v3d
 from ..kinematics.segments import StaticTorsoSegment
-from ..kinematics.cs import ht_r
 from .db_common import TrialDescription, ViconEndpts, SubjectDescription, ViconCSTransform, trial_descriptor_df, MARKERS
 from ..misc.python_utils import NestedDescriptor
 
 BIPLANE_FILE_HEADERS = {'frame': np.int32, 'pos_x': np.float64, 'pos_y': np.float64, 'pos_z': np.float64,
                         'quat_w': np.float64, 'quat_x': np.float64, 'quat_y': np.float64, 'quat_z': np.float64}
+TORSO_FILE_HEADERS = {'pos_x': np.float64, 'pos_y': np.float64, 'pos_z': np.float64,
+                      'quat_w': np.float64, 'quat_x': np.float64, 'quat_y': np.float64, 'quat_z': np.float64}
 TORSO_TRACKING_MARKERS = ['STRN', 'C7', 'T5', 'T10', 'CLAV']
 
 
@@ -153,11 +154,13 @@ class BiplaneViconTrial(ViconCsvTrial):
         self.vicon_csv_file_smoothed = self.trial_dir_path / (self.trial_name + '_vicon_smoothed.csv')
         self.humerus_biplane_file = self.trial_dir_path / (self.trial_name + '_humerus_biplane.csv')
         self.scapula_biplane_file = self.trial_dir_path / (self.trial_name + '_scapula_biplane.csv')
+        self.torso_vicon_file = self.trial_dir_path / (self.trial_name + '_torso.csv')
 
         # make sure the files are actually there
         assert (self.vicon_csv_file_smoothed.is_file())
         assert (self.humerus_biplane_file.is_file())
         assert (self.scapula_biplane_file.is_file())
+        assert (self.torso_vicon_file.is_file())
 
     @lazy
     @insert_nans
@@ -183,11 +186,17 @@ class BiplaneViconTrial(ViconCsvTrial):
 
     @staticmethod
     def homogeneous_from_biplane(df):
-        quat = df.iloc[:, 3:]
+        quat_raw = df.iloc[:, 3:].to_numpy()
         # make quaternion scalar last
-        quat = np.concatenate((quat[:, 1:], quat[:, 0]), 1)
-        pos = df.iloc[:, :3]
-        return ht_r(Rotation.from_quat(quat).as_matrix(), pos)
+        quat_raw = np.concatenate((quat_raw[:, 1:], quat_raw[:, 0][..., np.newaxis]), 1)
+        pos = df.iloc[:, :3].to_numpy()
+        valid_idx = ~np.any(np.isnan(quat_raw), 1)
+        rot_mat_valid = Rotation.from_quat(quat_raw[valid_idx]).as_matrix()
+        ht_mat = np.full((quat_raw.shape[0], 4, 4), np.nan)
+        ht_mat[:, :3, 3] = pos
+        ht_mat[valid_idx, :3, :3] = rot_mat_valid
+        ht_mat[:, 3, :] = [0, 0, 0, 1]
+        return ht_mat
 
     @lazy
     def humerus_fluoro(self) -> np.ndarray:
@@ -198,6 +207,16 @@ class BiplaneViconTrial(ViconCsvTrial):
     def scapula_fluoro(self) -> np.ndarray:
         """Scapula frame trajectory (N, 4, 4) in biplane fluoroscopy reference frame."""
         return BiplaneViconTrial.homogeneous_from_biplane(self.scapula_biplane_data)
+
+    @lazy
+    def torso_vicon_data(self) -> pd.DataFrame:
+        """Torso trajectory dataframe."""
+        return pd.read_csv(self.torso_vicon_file, header=0, dtype=TORSO_FILE_HEADERS)
+
+    @lazy
+    def torso_vicon(self) -> np.ndarray:
+        """Torso frame trajectory (N, 4, 4) in Vicon reference frame."""
+        return BiplaneViconTrial.homogeneous_from_biplane(self.torso_vicon_data)
 
 
 class ViconStatic:
@@ -248,6 +267,12 @@ class BiplaneViconSubject(SubjectDescription, ViconCSTransform, ViconStatic):
         def static_file(): return self.subject_dir_path / 'Static' / (self.subject_name + '_vicon_static_trial.csv')
         super().__init__(subject_dir_path=self.subject_dir_path, f_t_v_file=f_t_v_file, static_trial_file=static_file,
                          **kwargs)
+        # landmarks files
+        self.humerus_landmarks_file = self.subject_dir_path / 'Static' / (self.subject_name + '_humerus_landmarks.csv')
+        self.scapula_landmarks_file = self.subject_dir_path / 'Static' / (self.subject_name + '_scapula_landmarks.csv')
+        assert(self.humerus_landmarks_file.is_file())
+        assert(self.scapula_landmarks_file.is_file())
+
         self.trials = [trial_class(folder, self) for
                        folder in self.subject_dir_path.iterdir() if (folder.is_dir() and folder.stem != 'Static')]
 
