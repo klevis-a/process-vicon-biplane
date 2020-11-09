@@ -68,7 +68,7 @@ if __name__ == '__main__':
         torso_quat_reorder = np.concatenate([torso_quat_sfs[:, 3][..., np.newaxis], torso_quat_sfs[:, 0:3]], 1)
 
         def export_to_csv(file_name, export_data):
-            header_line = 'Pos_X, Pos_Y, Pos_Z, Quat_W, Quat_X, Quat_Y, Quat_Z'
+            header_line = 'pos_x, pos_y, pos_z, quat_w, quat_x, quat_y, quat_z'
             np.savetxt(file_name, np.concatenate(export_data, axis=1), delimiter=',', fmt='%.11g', comments='',
                        header=header_line)
 
