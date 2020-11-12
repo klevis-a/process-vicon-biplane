@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
 
     def export_to_csv(file_name, export_data):
-        header_line = 'pos_x, pos_y, pos_z, quat_w, quat_x, quat_y, quat_z'
+        header_line = 'pos_x, pos_y, pos_z, quat_x, quat_y, quat_z, quat_w'
         np.savetxt(file_name, np.concatenate(export_data, axis=1), delimiter=',', fmt='%.11g', comments='',
                    header=header_line)
 
@@ -60,5 +60,5 @@ if __name__ == '__main__':
         for idx, t in enumerate(subject_df['Trial']):
             if idx == 0:
                 shutil.copy(t.subject.humerus_landmarks_file, subject_dir)
-            log.info('Outputting GH kinematics for trial %s', t.trial_name)
+            log.info('Outputting TH kinematics for trial %s', t.trial_name)
             trial_exporter(t, subject_dir)
