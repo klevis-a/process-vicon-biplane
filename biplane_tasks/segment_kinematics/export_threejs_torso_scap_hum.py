@@ -14,6 +14,7 @@ if __name__ == '__main__':
         print('Use -m option to run this library module as a script.')
 
     from pathlib import Path
+    import json
     import shutil
     import numpy as np
     from scipy.spatial.transform import Rotation as Rot
@@ -45,8 +46,8 @@ if __name__ == '__main__':
         np.savetxt(file_name, np.concatenate((torso_data, scapula_data, hum_data), axis=1), delimiter=',', fmt='%.11g',
                    comments='', header=header_line)
 
-    def trial_exporter(trial, subject_folder):
-        torso_vicon = trial.torso_vicon[trial.vicon_endpts[0]:trial.vicon_endpts[1]]
+    def trial_exporter(trial, subject_folder, torso_source):
+        torso_vicon = getattr(trial, torso_source)[trial.vicon_endpts[0]:trial.vicon_endpts[1]]
         torso_vicon = torso_vicon[trial.humerus_biplane_data.index.to_numpy() - 1]
         scapula_vicon = change_cs(ht_inv(trial.subject.f_t_v), trial.scapula_fluoro)
         humerus_vicon = change_cs(ht_inv(trial.subject.f_t_v), trial.humerus_fluoro)
@@ -62,20 +63,43 @@ if __name__ == '__main__':
 
         trial_file = subject_folder / (trial.trial_name + '.csv')
         export_to_csv(trial_file, torso_pos_quat, scapula_pos_quat, humerus_pos_quat)
+        return trial_file
 
 
     # ready db
     root_path = Path(params.output_dir)
     db = create_db(params.biplane_vicon_db_dir, BiplaneViconSubject)
+    json_export = {}
+
+    def no_static_dir(file):
+        return file.parts[-3] + '/' + file.parts[-1]
 
     # export
     for subject_name, subject_df in db.groupby('Subject_Name'):
         log.info('Outputting torso, scapula, humerus kinematics for subject %s', subject_name)
         subject_dir = root_path / subject_name
         subject_dir.mkdir(parents=True, exist_ok=True)
-        for idx, t in enumerate(subject_df['Trial']):
+        json_export[subject_name] = {}
+        json_export[subject_name]['config'] = {}
+        json_export[subject_name]['activities'] = {}
+        for idx, (t, activity) in enumerate(zip(subject_df['Trial'], subject_df['Activity'])):
             if idx == 0:
                 shutil.copy(t.subject.humerus_landmarks_file, subject_dir)
                 shutil.copy(t.subject.scapula_landmarks_file, subject_dir)
-            log.info('Outputting torso, scapula, humerus kinematics for trial %s', t.trial_name)
-            trial_exporter(t, subject_dir)
+                shutil.copy(t.subject.humerus_stl_smooth_file, subject_dir)
+                shutil.copy(t.subject.scapula_stl_smooth_file, subject_dir)
+                json_export[subject_name]['config']['humerus_landmarks_file'] = \
+                    no_static_dir(t.subject.humerus_landmarks_file)
+                json_export[subject_name]['config']['scapula_landmarks_file'] = \
+                    no_static_dir(t.subject.scapula_landmarks_file)
+                json_export[subject_name]['config']['humerus_stl_smooth_file'] = \
+                    no_static_dir(t.subject.humerus_stl_smooth_file)
+                json_export[subject_name]['config']['scapula_stl_smooth_file'] = \
+                    no_static_dir(t.subject.scapula_stl_smooth_file)
+            if activity in (['CA', 'SA', 'FE', 'ERa90', 'ERaR', 'WCA', 'WSA', 'WFE']):
+                log.info('Outputting torso, scapula, humerus kinematics for trial %s', t.trial_name)
+                f = trial_exporter(t, subject_dir, params.threejs_torso_source)
+                json_export[subject_name]['activities'][activity] = f.parts[-2] + '/' + f.parts[-1]
+
+    with open(root_path / 'db_summary.json', 'w') as summary_file:
+        json.dump(json_export, summary_file, indent=4)

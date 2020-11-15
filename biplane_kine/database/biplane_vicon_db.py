@@ -155,12 +155,14 @@ class BiplaneViconTrial(ViconCsvTrial):
         self.humerus_biplane_file = self.trial_dir_path / (self.trial_name + '_humerus_biplane.csv')
         self.scapula_biplane_file = self.trial_dir_path / (self.trial_name + '_scapula_biplane.csv')
         self.torso_vicon_file = self.trial_dir_path / (self.trial_name + '_torso.csv')
+        self.torso_vicon_file_v3d = self.trial_dir_path / (self.trial_name + '_torso_v3d.csv')
 
         # make sure the files are actually there
         assert (self.vicon_csv_file_smoothed.is_file())
         assert (self.humerus_biplane_file.is_file())
         assert (self.scapula_biplane_file.is_file())
         assert (self.torso_vicon_file.is_file())
+        assert (self.torso_vicon_file_v3d.is_file())
 
     @lazy
     @insert_nans
@@ -214,9 +216,19 @@ class BiplaneViconTrial(ViconCsvTrial):
         return pd.read_csv(self.torso_vicon_file, header=0, dtype=TORSO_FILE_HEADERS)
 
     @lazy
+    def torso_vicon_data_v3d(self) -> pd.DataFrame:
+        """V3D torso trajectory dataframe."""
+        return pd.read_csv(self.torso_vicon_file_v3d, header=0, dtype=TORSO_FILE_HEADERS)
+
+    @lazy
     def torso_vicon(self) -> np.ndarray:
         """Torso frame trajectory (N, 4, 4) in Vicon reference frame."""
         return BiplaneViconTrial.homogeneous_from_biplane(self.torso_vicon_data)
+
+    @lazy
+    def torso_vicon_v3d(self) -> np.ndarray:
+        """V3D torso frame trajectory (N, 4, 4) in Vicon reference frame."""
+        return BiplaneViconTrial.homogeneous_from_biplane(self.torso_vicon_data_v3d)
 
 
 class ViconStatic:
@@ -270,8 +282,12 @@ class BiplaneViconSubject(SubjectDescription, ViconCSTransform, ViconStatic):
         # landmarks files
         self.humerus_landmarks_file = self.subject_dir_path / 'Static' / (self.subject_name + '_humerus_landmarks.csv')
         self.scapula_landmarks_file = self.subject_dir_path / 'Static' / (self.subject_name + '_scapula_landmarks.csv')
+        self.humerus_stl_smooth_file = self.subject_dir_path / 'Static' / (self.subject_name + '_Humerus_smooth.stl')
+        self.scapula_stl_smooth_file = self.subject_dir_path / 'Static' / (self.subject_name + '_Scapula_smooth.stl')
         assert(self.humerus_landmarks_file.is_file())
         assert(self.scapula_landmarks_file.is_file())
+        assert(self.humerus_stl_smooth_file.is_file())
+        assert(self.scapula_stl_smooth_file.is_file())
 
         self.trials = [trial_class(folder, self) for
                        folder in self.subject_dir_path.iterdir() if (folder.is_dir() and folder.stem != 'Static')]
