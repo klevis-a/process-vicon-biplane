@@ -1,4 +1,4 @@
-"""Export torso ISB-defined kinematics as derived from smoothed/filled/smoothed marker positions for every trial in the
+"""Export torso V3D-defined kinematics as derived from smoothed/filled/smoothed marker positions for every trial in the
 biplane/Vicon filesystem-based database.
 
 The path to a config directory (containing parameters.json) must be passed in as an argument. Within parameters.json the
@@ -16,20 +16,20 @@ if __name__ == '__main__':
     from pathlib import Path
     import numpy as np
     from scipy.spatial.transform import Rotation as Rot
-    from biplane_kine.database import create_db
-    from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject
+    from biplane_kine.database import create_db, anthro_db
+    from biplane_kine.database.biplane_vicon_db import BiplaneViconSubjectV3D
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.smoothing.filling import fill_gaps_rb
     from biplane_kine.smoothing.kf_filtering_helpers import piecewise_filter_with_exception
     from biplane_kine.kinematics.segments import StaticTorsoSegment
     from biplane_kine.kinematics.kine_trajectory import compute_trajectory_continuous
-    from ..general.arg_parser import mod_arg_parser
-    from ..parameters import read_filling_directives, trial_filling_directives
+    from biplane_tasks.general.arg_parser import mod_arg_parser
+    from biplane_tasks.parameters import read_filling_directives, trial_filling_directives
     import logging
     from logging.config import fileConfig
 
     # initialize
-    config_dir = Path(mod_arg_parser('Export ISB torso kinematics', __package__, __file__))
+    config_dir = Path(mod_arg_parser('Export V3D torso kinematics', __package__, __file__))
     params = Params.get_params(config_dir / 'parameters.json')
 
     # logging
@@ -74,12 +74,17 @@ if __name__ == '__main__':
 
         trial_folder = subject_folder / trial.trial_name
         trial_folder.mkdir(parents=True, exist_ok=True)
-        trial_file = trial_folder / (trial.trial_name + '_torso.csv')
+        trial_file = trial_folder / (trial.trial_name + '_torso_v3d.csv')
         export_to_csv(trial_file, [torso_pos_sfs, torso_quat_reorder])
 
     # ready db
     root_path = Path(params.output_dir)
-    db = create_db(params.biplane_vicon_db_dir, BiplaneViconSubject)
+    anthro = anthro_db(params.biplane_vicon_db_dir)
+
+    def armpit_thickness(subj_name):
+        return anthro.loc[subj_name, 'Armpit_Thickness']
+
+    db = create_db(params.biplane_vicon_db_dir, BiplaneViconSubjectV3D, armpit_thickness=armpit_thickness)
 
     # export kinematics
     filling_directions = read_filling_directives(params.filling_directives)

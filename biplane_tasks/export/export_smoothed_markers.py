@@ -21,7 +21,7 @@ from biplane_kine.database.biplane_vicon_db import ViconCsvTrial
 from biplane_kine.smoothing.kf_filtering_helpers import (piecewise_filter_with_exception, InsufficientDataError,
                                                          DoNotUseMarkerError)
 import logging
-from ..parameters import marker_smoothing_exceptions
+from biplane_tasks.parameters import marker_smoothing_exceptions
 
 log = logging.getLogger(__name__)
 
@@ -72,8 +72,8 @@ if __name__ == '__main__':
     from biplane_kine.database import create_db
     from biplane_kine.database.biplane_vicon_db import ViconCsvSubject
     from biplane_kine.misc.json_utils import Params
-    from ..parameters import read_smoothing_exceptions
-    from ..general.arg_parser import mod_arg_parser
+    from biplane_tasks.parameters import read_smoothing_exceptions
+    from biplane_tasks.general.arg_parser import mod_arg_parser
     from logging.config import fileConfig
 
     # initialize
