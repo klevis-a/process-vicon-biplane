@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from lazy import lazy
-from scipy.spatial.transform import Rotation
+import quaternion
 from typing import Sequence, Union, Callable, Tuple
 from ..kinematics.cs import ht_r
 
@@ -137,8 +137,5 @@ class ViconCSTransform:
     @lazy
     def f_t_v(self) -> np.ndarray:
         """Homogeneous CS transformation ((4, 4) numpy array) from the Vicon to the biplane fluoroscopy CS."""
-        q_imp = self.f_t_v_data.iloc[0, :4].to_numpy()
-        # convert to scalar last format
-        q = np.concatenate((q_imp[1:], [q_imp[0]]))
-        r = Rotation.from_quat(q)
-        return ht_r(r.as_matrix(), self.f_t_v_data.iloc[0, 4:].to_numpy())
+        r = quaternion.as_rotation_matrix(quaternion.from_float_array(self.f_t_v_data.iloc[0, :4].to_numpy()))
+        return ht_r(r, self.f_t_v_data.iloc[0, 4:].to_numpy())

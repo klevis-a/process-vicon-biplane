@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     from pathlib import Path
     import numpy as np
-    from scipy.spatial.transform import Rotation as Rot
+    import quaternion
     from biplane_kine.database import create_db, anthro_db
     from biplane_kine.database.biplane_vicon_db import BiplaneViconSubjectV3D
     from biplane_kine.misc.json_utils import Params
@@ -60,12 +60,12 @@ if __name__ == '__main__':
         def process_trial(static_markers, tracking_markers):
             torso_traj = compute_trajectory_continuous(static_markers, tracking_markers)
             torso_pos = torso_traj[:, :3, 3]
-            torso_quat = Rot.from_matrix(torso_traj[:, :3, :3]).as_quat()
+            torso_quat = quaternion.as_float_array(quaternion.from_rotation_matrix(torso_traj[:, :3, :3],
+                                                                                   nonorthogonal=False))
             return torso_pos, torso_quat
 
         stat_markers = trial.subject.torso.static_markers_intrinsic
         torso_pos_sfs, torso_quat_sfs = process_trial(stat_markers, sfs_marker_pos)
-        torso_quat_reorder = np.concatenate([torso_quat_sfs[:, 3][..., np.newaxis], torso_quat_sfs[:, 0:3]], 1)
 
         def export_to_csv(file_name, export_data):
             header_line = 'pos_x, pos_y, pos_z, quat_w, quat_x, quat_y, quat_z'
@@ -75,7 +75,7 @@ if __name__ == '__main__':
         trial_folder = subject_folder / trial.trial_name
         trial_folder.mkdir(parents=True, exist_ok=True)
         trial_file = trial_folder / (trial.trial_name + '_torso_v3d.csv')
-        export_to_csv(trial_file, [torso_pos_sfs, torso_quat_reorder])
+        export_to_csv(trial_file, [torso_pos_sfs, torso_quat_sfs])
 
     # ready db
     root_path = Path(params.output_dir)

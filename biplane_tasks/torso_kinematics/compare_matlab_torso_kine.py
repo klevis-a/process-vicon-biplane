@@ -17,7 +17,7 @@ if __name__ == '__main__':
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
-    from scipy.spatial.transform import Rotation as Rot
+    import quaternion
     from ..general.arg_parser import mod_arg_parser
     from biplane_kine.graphing.common_graph_utils import init_graphing, make_interactive
     from biplane_kine.kinematics.vec_ops import extended_dot
@@ -55,8 +55,8 @@ if __name__ == '__main__':
     torso_vicon = compute_trajectory(trial.subject.torso.static_markers_intrinsic, tracking_markers)
     torso_fluoro = change_cs(trial.subject.f_t_v, torso_vicon)
     torso_truncated = torso_fluoro[trial.vicon_endpts[0]:trial.vicon_endpts[1]]
-    torso_pos_quat = np.concatenate((torso_truncated[:, :3, 3],
-                                     Rot.from_matrix(torso_truncated[:, :3, :3]).as_quat()), 1)
+    quat = quaternion.as_float_array(quaternion.from_rotation_matrix(torso_truncated[:, :3, :3], nonorthogonal=False))
+    torso_pos_quat = np.concatenate((torso_truncated[:, :3, 3], quat), 1)
 
     # retrieve reference data
     ref_data = pd.read_csv(Path(params.matlab_threejs_dir) / subject_id / (params.trial_name + '.csv'))

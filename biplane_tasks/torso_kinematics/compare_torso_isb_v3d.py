@@ -18,7 +18,7 @@ if __name__ == '__main__':
     from pathlib import Path
     import pandas as pd
     import numpy as np
-    from scipy.spatial.transform import Rotation as Rot
+    import quaternion
     from ..general.arg_parser import mod_arg_parser
     from biplane_kine.database import create_db, anthro_db
     from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject
@@ -62,7 +62,8 @@ if __name__ == '__main__':
         matrix_diff = df_row['isb'][0:3, 0:3].T @ df_row['v3d'][0:3, 0:3]
         pose_diff = np.full((6,), np.nan)
         pose_diff[0:3] = pos_diff
-        pose_diff[3:] = np.rad2deg(Rot.from_matrix(matrix_diff).as_rotvec())
+        pose_diff[3:] = np.rad2deg(quaternion.as_rotation_vector(quaternion.from_rotation_matrix(matrix_diff,
+                                                                                                 nonorthogonal=False)))
         return pose_diff
 
     (subject_df['pos_x'], subject_df['pos_y'], subject_df['pos_z'], subject_df['rot_x'], subject_df['rot_y'],

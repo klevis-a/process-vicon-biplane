@@ -1,6 +1,6 @@
 from typing import Tuple
 import numpy as np
-from scipy.spatial.transform import Rotation as Rot
+import quaternion
 
 
 def absor_matrix(markers_a: np.ndarray, markers_b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -41,7 +41,6 @@ def absor_quat(markers_a: np.ndarray, markers_b: np.ndarray) -> Tuple[np.ndarray
     # find optimal R and t
     (eigen_values, eigen_vectors) = np.linalg.eig(n)
     q = eigen_vectors[:, eigen_values.argmax()]
-    q = np.array([q[1], q[2], q[3], q[0]])
-    r = Rot.from_quat(q).as_matrix()
+    r = quaternion.as_rotation_matrix(quaternion.from_float_array(q))
     t = b_mean - r.dot(a_mean)
     return r, t
