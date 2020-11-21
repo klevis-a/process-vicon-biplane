@@ -38,3 +38,13 @@ def change_cs(new_frame: np.ndarray, frame_traj: np.ndarray) -> np.ndarray:
     """Change all frames in frame_traj (N, 4, 4) into the reference CS specified by new_frame (either (4, 4) or
     (N, 4, 4)."""
     return new_frame @ frame_traj
+
+
+def pos_ht(mats: np.ndarray) -> np.ndarray:
+    """Extract position from homogeneous transformations in mats (N, 4, 4)."""
+    return mats[..., :3, 3]
+
+
+def r_ht(mats: np.ndarray) -> np.ndarray:
+    """Extract orientation from homogeneous transformations in mats (N, 4, 4)."""
+    return mats[..., :3, :3]

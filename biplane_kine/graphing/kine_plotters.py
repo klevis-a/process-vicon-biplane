@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.figure
-from typing import List, Sequence, Dict, Tuple
+from typing import List, Sequence, Dict, Tuple, Union
 from pythonGraphingLibrary import plotUtils
 from .common_graph_utils import make_interactive
 from .smoothing_graph_utils import marker_graph_init, marker_graph_add
@@ -291,5 +291,158 @@ class TorsoTrajComparisonPlotter:
         fig.legend((prev_filled_lines[0], smoothed_lines[0], smoothed_filled_lines[0], sfs_lines[0]),
                    ('Prev Filled', 'Smoothed', 'Smoothed/Filled', 'SFS'),
                    ncol=4, handlelength=0.75, handletextpad=0.25, columnspacing=0.5, loc='lower left')
+        make_interactive()
+        return fig
+
+
+class RawSmoothSegmentPlotter:
+    """Plotter for torso kinematics derived from labeled, filled, and smoothed skin marker data.
+
+    Attributes
+    ----------
+    pos_raw: numpy.ndarray (N, 3)
+        Raw position trajectory
+    eul_raw: numpy.ndarray (N, 3)
+        Raw orientation trajectory (expressed as an Euler angle sequence)
+    pos_smooth: numpy.ndarray (N, 3)
+        Smoothed position trajectory
+    eul_smooth: numpy.ndarray (N, 3)
+        Smoothed orientation trajectory (expressed as an Euler angle sequence)
+    vel: numpy.ndarray (N, 3)
+        Smoothed linear velocity
+    ang_vel: numpy.ndarray (N, 3)
+        Smoothed angular velocity
+    frame_nums: numpy.ndarray (N,)
+        Biplane fluoroscopy frame numbers
+    trial_name: str
+        Name of trial being plotted
+    segment_name: str
+        Name of segment being plotted
+    euler_legend: List of str
+        Legend specifying the sequence of Euler rotation names
+    """
+    def __init__(self, trial_name: str, segment_name: str, pos_raw: np.ndarray, eul_raw: np.ndarray,
+                 pos_smooth: np.ndarray, eul_smooth: np.ndarray, vel: np.ndarray, ang_vel: np.ndarray,
+                 frame_nums: np.ndarray, euler_legend: Sequence[str], pos_legend: Union[Sequence[str], None]):
+        self.pos_raw = pos_raw
+        self.eul_raw = eul_raw
+        self.pos_smooth = pos_smooth
+        self.eul_smooth = eul_smooth
+        self.vel = vel
+        self.ang_vel = ang_vel
+        self.frame_nums = frame_nums
+        self.trial_name = trial_name
+        self.segment_name = segment_name
+        self.euler_legend = euler_legend
+        self.pos_legend = ['X', 'Y', 'Z'] if pos_legend is None else pos_legend
+
+    def plot(self) -> List[matplotlib.figure.Figure]:
+        """Plot raw and smoothed position and orientation.
+
+        Figures:
+        1. Position broken out into 3 separate subplots for each spatial dimension
+        2. Orientation broken out into 3 separate subplots for each spatial dimension
+        3. Velocity broken out into 3 separate subplots for each spatial dimension
+        4. Angular velocity broken out into 3 separate subplots for each spatial dimension
+        5. Position plotted on one axes with different colors for each spatial dimension
+        6. Orientation plotted on one axes with different colors for each spatial dimension
+        7. Velocity plotted on one axes with different colors for each spatial dimension
+        8. Angular velocity plotted on one axes with different colors for each spatial dimension
+        """
+        figs = []
+
+        title_prefix = self.trial_name + ' ' + self.segment_name + ' '
+        # Figure 1, position in 3 subplots
+        pos_fig_sub = self.plot_subplots(0,  title_prefix + 'Position (mm)', self.pos_raw, self.pos_smooth, self.pos_legend)
+        figs.append(pos_fig_sub)
+
+        # Figure 2, orientation in 3 subplots
+        eul_fig_sub = self.plot_subplots(1, title_prefix + 'Euler Angles (deg)', self.eul_raw, self.eul_smooth,
+                                         self.euler_legend)
+        figs.append(eul_fig_sub)
+
+        # Figure 3, velocity in 3 subplots
+        vel_fig_sub = self.plot_subplots_vel(2, title_prefix + 'Velocity', 'Velocity (mm/s)', self.vel)
+        figs.append(vel_fig_sub)
+
+        # Figure 4, angular velocity in 3 subplots
+        ang_vel_fig_sub = self.plot_subplots_vel(3, title_prefix + 'Angular Velocity', 'Angular Velocity (deg/s)',
+                                                 self.ang_vel)
+        figs.append(ang_vel_fig_sub)
+
+        # Figure 5, position in one axes
+        pos_fig_one = self.plot_one_axes(4, title_prefix + 'Position', 'Position (mm)', self.pos_raw, self.pos_smooth,
+                                         self.pos_legend)
+        figs.append(pos_fig_one)
+
+        # Figure 6, orientation in one axes
+        eul_fig_one = self.plot_one_axes(5, title_prefix + 'Euler Angles', 'Angle (deg)', self.eul_raw, self.eul_smooth,
+                                         self.euler_legend)
+        figs.append(eul_fig_one)
+
+        # Figure 7, velocity in one axes
+        vel_fig_one = self.plot_one_axes_vel(6, title_prefix + 'Velocity', 'Velocity (mm/s)', self.vel, self.pos_legend)
+        figs.append(vel_fig_one)
+
+        # Figure 8, angular velocity in one axes
+        ang_vel_fig_one = self.plot_one_axes_vel(7, title_prefix + 'Angular Velocity', 'Angular Velocity (deg/s)',
+                                                 self.ang_vel, self.pos_legend)
+        figs.append(ang_vel_fig_one)
+
+        return figs
+
+    def plot_subplots(self, fig_num: int, title: str, raw: np.ndarray, smoothed: np.ndarray,
+                      axes_lbl_entries: Sequence[str]) -> matplotlib.figure.Figure:
+        """Plot position or orientation into 3 separate subplots for each spatial dimension."""
+        fig = plt.figure(fig_num)
+        axs = fig.subplots(3, 1, sharex=True)
+        raw_lines = marker_graph_init(axs, raw, '', self.frame_nums, color='blue')
+        for idx, ax in enumerate(axs):
+            plotUtils.update_ylabel(ax, axes_lbl_entries[idx], font_size=10)
+        smoothed_lines = marker_graph_add(axs, smoothed, self.frame_nums, color='green')
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.94)
+        fig.suptitle(title)
+        fig.legend((raw_lines[0], smoothed_lines[0]), ('Raw', 'Smoothed'), ncol=2, handlelength=0.75,
+                   handletextpad=0.25, columnspacing=0.5, loc='lower left')
+        make_interactive()
+        return fig
+
+    def plot_one_axes(self, fig_num: int, title: str, y_label: str, raw: np.ndarray, smoothed: np.ndarray,
+                      legend_entries: Sequence[str]) -> matplotlib.figure.Figure:
+        """Plot position or orientation on one axes with different colors for each spatial dimension."""
+        fig = plt.figure(fig_num)
+        ax = fig.subplots(1, 1)
+        raw_lines = kine_graph_init(ax, raw, y_label, self.frame_nums, [{'ls': ':', 'lw': 2}] * 3)
+        ax.set_prop_cycle(None)
+        smoothed_lines = kine_graph_add(ax, smoothed, self.frame_nums, [{'ls': '-'}] * 3)
+        plt.tight_layout()
+        fig.suptitle(title, x=0.7)
+        legend_text = ('Raw (' + legend_entries[0] + ')', 'Smoothed (' + legend_entries[1] + ')',
+                       'Smoothed (' + legend_entries[2] + ')')
+        fig.legend((raw_lines[0], smoothed_lines[1], smoothed_lines[2]), legend_text, ncol=3, handlelength=0.75,
+                   handletextpad=0.25, columnspacing=0.5, loc='lower left')
+        make_interactive()
+        return fig
+
+    def plot_subplots_vel(self, fig_num: int, title: str, y_label: str, vel: np.ndarray) -> matplotlib.figure.Figure:
+        """Plot velocity into 3 separate subplots for each spatial dimension."""
+        fig = plt.figure(fig_num)
+        axs = fig.subplots(3, 1, sharex=True)
+        marker_graph_init(axs, vel, y_label, self.frame_nums, color='blue')
+        plt.tight_layout()
+        fig.suptitle(title)
+        make_interactive()
+        return fig
+
+    def plot_one_axes_vel(self, fig_num: int, title: str, y_label: str, vel: np.ndarray,
+                          legend_entries: Sequence[str]) -> matplotlib.figure.Figure:
+        """Plot velocity on one axes with different colors for each spatial dimension."""
+        fig = plt.figure(fig_num)
+        ax = fig.subplots(1, 1)
+        kine_graph_init(ax, vel, y_label, self.frame_nums, [{}] * 3)
+        plt.tight_layout()
+        fig.suptitle(title, x=0.7)
+        fig.legend(legend_entries, ncol=3, handlelength=0.75, handletextpad=0.25, columnspacing=0.5, loc='lower left')
         make_interactive()
         return fig
