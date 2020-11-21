@@ -23,7 +23,7 @@ if __name__ == '__main__':
     from biplane_kine.kinematics.vec_ops import extended_dot
     from biplane_kine.kinematics.cs import change_cs
     from biplane_kine.kinematics.segments import StaticTorsoSegment
-    from biplane_kine.kinematics.kine_trajectory import compute_trajectory
+    from biplane_kine.kinematics.absor import compute_trajectory
     from biplane_kine.database import create_db, anthro_db
     from biplane_kine.database.biplane_vicon_db import BiplaneViconSubjectV3D
     from biplane_kine.misc.json_utils import Params

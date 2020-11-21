@@ -22,7 +22,7 @@ if __name__ == '__main__':
     from biplane_kine.smoothing.filling import fill_gaps_rb
     from biplane_kine.smoothing.kf_filtering_helpers import piecewise_filter_with_exception
     from biplane_kine.kinematics.segments import StaticTorsoSegment
-    from biplane_kine.kinematics.kine_trajectory import compute_trajectory_continuous
+    from biplane_kine.kinematics.absor import compute_trajectory_continuous
     from biplane_tasks.general.arg_parser import mod_arg_parser
     from biplane_tasks.parameters import read_filling_directives, trial_filling_directives
     import logging

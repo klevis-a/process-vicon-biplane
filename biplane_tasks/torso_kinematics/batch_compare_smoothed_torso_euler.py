@@ -15,7 +15,7 @@ import numpy as np
 from biplane_kine.kinematics.cs import change_cs, ht_inv
 from biplane_kine.kinematics.euler_angles import zxy_intrinsic
 from biplane_kine.graphing.kine_plotters import RawSmoothedKineTorsoPlotter
-from biplane_kine.kinematics.kine_trajectory import compute_trajectory
+from biplane_kine.kinematics.absor import compute_trajectory
 from biplane_kine.kinematics.segments import StaticTorsoSegment
 import logging
 

@@ -25,7 +25,7 @@ if __name__ == '__main__':
     from biplane_kine.kinematics.segments import StaticTorsoSegment
     from biplane_kine.kinematics.cs import ht_inv, change_cs
     from biplane_kine.kinematics.euler_angles import zxy_intrinsic
-    from biplane_kine.kinematics.kine_trajectory import compute_trajectory, compute_trajectory_continuous
+    from biplane_kine.kinematics.absor import compute_trajectory, compute_trajectory_continuous
     from biplane_kine.graphing.common_graph_utils import init_graphing
     from biplane_kine.graphing.kine_plotters import TorsoTrajComparisonPlotter
     from ..general.arg_parser import mod_arg_parser
