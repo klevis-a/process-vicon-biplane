@@ -320,10 +320,13 @@ class RawSmoothSegmentPlotter:
         Name of segment being plotted
     euler_legend: List of str
         Legend specifying the sequence of Euler rotation names
+    fig_num_start: int
+        Starting figure number
     """
     def __init__(self, trial_name: str, segment_name: str, pos_raw: np.ndarray, eul_raw: np.ndarray,
                  pos_smooth: np.ndarray, eul_smooth: np.ndarray, vel: np.ndarray, ang_vel: np.ndarray,
-                 frame_nums: np.ndarray, euler_legend: Sequence[str], pos_legend: Union[Sequence[str], None]):
+                 frame_nums: np.ndarray, euler_legend: Sequence[str], pos_legend: Union[Sequence[str], None] = None,
+                 fig_num_start: int = 0):
         self.pos_raw = pos_raw
         self.eul_raw = eul_raw
         self.pos_smooth = pos_smooth
@@ -335,6 +338,7 @@ class RawSmoothSegmentPlotter:
         self.segment_name = segment_name
         self.euler_legend = euler_legend
         self.pos_legend = ['X', 'Y', 'Z'] if pos_legend is None else pos_legend
+        self.fig_num_start = fig_num_start
 
     def plot(self) -> List[matplotlib.figure.Figure]:
         """Plot raw and smoothed position and orientation.
@@ -353,40 +357,43 @@ class RawSmoothSegmentPlotter:
 
         title_prefix = self.trial_name + ' ' + self.segment_name + ' '
         # Figure 1, position in 3 subplots
-        pos_fig_sub = self.plot_subplots(0,  title_prefix + 'Position (mm)', self.pos_raw, self.pos_smooth, self.pos_legend)
+        pos_fig_sub = self.plot_subplots(self.fig_num_start,  title_prefix + 'Position (mm)', self.pos_raw,
+                                         self.pos_smooth, self.pos_legend)
         figs.append(pos_fig_sub)
 
         # Figure 2, orientation in 3 subplots
-        eul_fig_sub = self.plot_subplots(1, title_prefix + 'Euler Angles (deg)', self.eul_raw, self.eul_smooth,
-                                         self.euler_legend)
+        eul_fig_sub = self.plot_subplots(self.fig_num_start + 1, title_prefix + 'Euler Angles (deg)', self.eul_raw,
+                                         self.eul_smooth, self.euler_legend)
         figs.append(eul_fig_sub)
 
         # Figure 3, velocity in 3 subplots
-        vel_fig_sub = self.plot_subplots_vel(2, title_prefix + 'Velocity', 'Velocity (mm/s)', self.vel)
+        vel_fig_sub = self.plot_subplots_vel(self.fig_num_start + 2, title_prefix + 'Velocity', 'Velocity (mm/s)',
+                                             self.vel)
         figs.append(vel_fig_sub)
 
         # Figure 4, angular velocity in 3 subplots
-        ang_vel_fig_sub = self.plot_subplots_vel(3, title_prefix + 'Angular Velocity', 'Angular Velocity (deg/s)',
-                                                 self.ang_vel)
+        ang_vel_fig_sub = self.plot_subplots_vel(self.fig_num_start + 3, title_prefix + 'Angular Velocity',
+                                                 'Angular Velocity (deg/s)', self.ang_vel)
         figs.append(ang_vel_fig_sub)
 
         # Figure 5, position in one axes
-        pos_fig_one = self.plot_one_axes(4, title_prefix + 'Position', 'Position (mm)', self.pos_raw, self.pos_smooth,
-                                         self.pos_legend)
+        pos_fig_one = self.plot_one_axes(self.fig_num_start + 4, title_prefix + 'Position', 'Position (mm)',
+                                         self.pos_raw, self.pos_smooth, self.pos_legend)
         figs.append(pos_fig_one)
 
         # Figure 6, orientation in one axes
-        eul_fig_one = self.plot_one_axes(5, title_prefix + 'Euler Angles', 'Angle (deg)', self.eul_raw, self.eul_smooth,
-                                         self.euler_legend)
+        eul_fig_one = self.plot_one_axes(self.fig_num_start + 5, title_prefix + 'Euler Angles', 'Angle (deg)',
+                                         self.eul_raw, self.eul_smooth, self.euler_legend)
         figs.append(eul_fig_one)
 
         # Figure 7, velocity in one axes
-        vel_fig_one = self.plot_one_axes_vel(6, title_prefix + 'Velocity', 'Velocity (mm/s)', self.vel, self.pos_legend)
+        vel_fig_one = self.plot_one_axes_vel(self.fig_num_start + 6, title_prefix + 'Velocity', 'Velocity (mm/s)',
+                                             self.vel, self.pos_legend)
         figs.append(vel_fig_one)
 
         # Figure 8, angular velocity in one axes
-        ang_vel_fig_one = self.plot_one_axes_vel(7, title_prefix + 'Angular Velocity', 'Angular Velocity (deg/s)',
-                                                 self.ang_vel, self.pos_legend)
+        ang_vel_fig_one = self.plot_one_axes_vel(self.fig_num_start + 7, title_prefix + 'Angular Velocity',
+                                                 'Angular Velocity (deg/s)', self.ang_vel, self.pos_legend)
         figs.append(ang_vel_fig_one)
 
         return figs
@@ -396,7 +403,7 @@ class RawSmoothSegmentPlotter:
         """Plot position or orientation into 3 separate subplots for each spatial dimension."""
         fig = plt.figure(fig_num)
         axs = fig.subplots(3, 1, sharex=True)
-        raw_lines = marker_graph_init(axs, raw, '', self.frame_nums, color='blue')
+        raw_lines = marker_graph_init(axs, raw, '', self.frame_nums, color='red')
         for idx, ax in enumerate(axs):
             plotUtils.update_ylabel(ax, axes_lbl_entries[idx], font_size=10)
         smoothed_lines = marker_graph_add(axs, smoothed, self.frame_nums, color='green')
