@@ -8,6 +8,7 @@ logger_name: Name of the loggger set up in logging.ini that will receive log mes
 biplane_vicon_db_dir: Path to the directory containing Vicon skin marker data.
 output_dir: Path to where trials should be exported
 torso_def: Whether to use the ISB or V3D definition for establishing the torso coordinate system.
+num_frames_avg: Number of frames to average when smoothing scapula/humerus trajectories.
 """
 
 if __name__ == '__main__':
@@ -20,6 +21,7 @@ if __name__ == '__main__':
     import numpy as np
     from biplane_kine.database import create_db
     from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject, trajectories_from_trial
+    from biplane_kine.kinematics.trajectory import smooth_trajectory
     from biplane_kine.misc.json_utils import Params
     from biplane_tasks.general.arg_parser import mod_arg_parser
     import logging
@@ -45,13 +47,15 @@ if __name__ == '__main__':
         np.savetxt(file_name, np.concatenate((torso_data, scapula_data, hum_data), axis=1), delimiter=',', fmt='%.11g',
                    comments='', header=header_line)
 
-    def trial_exporter(trial, dt, subject_folder, torso_def):
+    def trial_exporter(trial, dt, subject_folder, torso_def, num_frames_avg):
         def pos_quat_from_traj(traj):
             quat_sf = traj.quat_float
             quat_sl = np.concatenate((quat_sf[:, 1:], quat_sf[:, 0][..., np.newaxis]), 1)
             return np.concatenate((traj.pos, quat_sl), axis=1)
 
         torso, scap, hum = trajectories_from_trial(trial, dt, torso_def=torso_def)
+        scap = smooth_trajectory(scap, num_frames_avg)
+        hum = smooth_trajectory(hum, num_frames_avg)
         torso_pos_quat = pos_quat_from_traj(torso)
         scapula_pos_quat = pos_quat_from_traj(scap)
         humerus_pos_quat = pos_quat_from_traj(hum)
@@ -93,7 +97,7 @@ if __name__ == '__main__':
                     no_static_dir(t.subject.scapula_stl_smooth_file)
             if activity in (['CA', 'SA', 'FE', 'ERa90', 'ERaR', 'WCA', 'WSA', 'WFE']):
                 log.info('Outputting torso, scapula, humerus kinematics for trial %s', t.trial_name)
-                f = trial_exporter(t, db.attrs['dt'], subject_dir, params.torso_def)
+                f = trial_exporter(t, db.attrs['dt'], subject_dir, params.torso_def, params.num_frames_avg)
                 json_export[subject_name]['activities'][activity] = f.parts[-2] + '/' + f.parts[-1]
 
     with open(root_path / 'db_summary.json', 'w') as summary_file:
