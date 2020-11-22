@@ -73,7 +73,7 @@ def yxy_intrinsic(mat: np.ndarray) -> np.ndarray:
     # compute Euler angles
     theta_y0[not_nan] = np.where(r11 < 1, np.where(r11 > -1, np.arctan2(-r01, -r21), 0), 0)
     theta_x[not_nan] = np.where(r11 < 1, np.where(r11 > -1, -np.arccos(r11), -np.pi), 0)
-    theta_y1[not_nan] = np.where(r11 < 1, np.where(r11 > -1, np.arctan2(-r10, r12), np.atan2(r02, r00)),
+    theta_y1[not_nan] = np.where(r11 < 1, np.where(r11 > -1, np.arctan2(-r10, r12), np.arctan2(r02, r00)),
                                  np.arctan2(r02, r00))
 
     return np.stack((theta_y0, theta_x, theta_y1), -1)
