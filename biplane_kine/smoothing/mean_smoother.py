@@ -1,8 +1,6 @@
 import numpy as np
 import quaternion
 
-from biplane_kine.kinematics.trajectory import PoseTrajectory
-
 
 def quat_mean(quats: np.ndarray) -> np.ndarray:
     """Return average of quaternions in quats (N, 4)."""
@@ -51,8 +49,3 @@ def smooth_pos_traj(pos_traj: np.ndarray, num_frames_avg: int) -> np.ndarray:
         pos_traj_smooth[:, i] = np.convolve(pos_traj_ext[:, i], stenc, 'valid')
 
     return pos_traj_smooth
-
-
-def smooth_trajectory(traj: PoseTrajectory, num_frames_avg: int) -> PoseTrajectory:
-    return PoseTrajectory.from_quat(smooth_pos_traj(traj.pos, num_frames_avg),
-                                    smooth_quat_traj(traj.quat_float, num_frames_avg), traj.dt)

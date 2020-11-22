@@ -7,6 +7,7 @@ following keys must be present:
 logger_name: Name of the loggger set up in logging.ini that will receive log messages from this script.
 biplane_vicon_db_dir: Path to the directory containing Vicon skin marker data.
 output_dir: Path to where trials should be exported
+torso_def: Whether to use the ISB or V3D definition for establishing the torso coordinate system.
 """
 
 if __name__ == '__main__':
@@ -17,11 +18,9 @@ if __name__ == '__main__':
     import json
     import shutil
     import numpy as np
-    from scipy.spatial.transform import Rotation as Rot
     from biplane_kine.database import create_db
-    from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject
+    from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject, trajectories_from_trial
     from biplane_kine.misc.json_utils import Params
-    from biplane_kine.kinematics.cs import change_cs, ht_inv
     from biplane_tasks.general.arg_parser import mod_arg_parser
     import logging
     from logging.config import fileConfig
@@ -46,20 +45,16 @@ if __name__ == '__main__':
         np.savetxt(file_name, np.concatenate((torso_data, scapula_data, hum_data), axis=1), delimiter=',', fmt='%.11g',
                    comments='', header=header_line)
 
-    def trial_exporter(trial, subject_folder, torso_source):
-        torso_vicon = getattr(trial, torso_source)[trial.vicon_endpts[0]:trial.vicon_endpts[1]]
-        torso_vicon = torso_vicon[trial.humerus_biplane_data.index.to_numpy() - 1]
-        scapula_vicon = change_cs(ht_inv(trial.subject.f_t_v), trial.scapula_fluoro)
-        humerus_vicon = change_cs(ht_inv(trial.subject.f_t_v), trial.humerus_fluoro)
+    def trial_exporter(trial, dt, subject_folder, torso_def):
+        def pos_quat_from_traj(traj):
+            quat_sf = traj.quat_float
+            quat_sl = np.concatenate((quat_sf[:, 1:], quat_sf[:, 0][..., np.newaxis]), 1)
+            return np.concatenate((traj.pos, quat_sl), axis=1)
 
-        def pos_quat_from_ht(mat):
-            pos = mat[:, :3, 3]
-            quat = Rot.from_matrix(mat[:, :3, :3]).as_quat()
-            return np.concatenate((pos, quat), axis=1)
-
-        torso_pos_quat = pos_quat_from_ht(torso_vicon)
-        scapula_pos_quat = pos_quat_from_ht(scapula_vicon)
-        humerus_pos_quat = pos_quat_from_ht(humerus_vicon)
+        torso, scap, hum = trajectories_from_trial(trial, dt, torso_def=torso_def)
+        torso_pos_quat = pos_quat_from_traj(torso)
+        scapula_pos_quat = pos_quat_from_traj(scap)
+        humerus_pos_quat = pos_quat_from_traj(hum)
 
         trial_file = subject_folder / (trial.trial_name + '.csv')
         export_to_csv(trial_file, torso_pos_quat, scapula_pos_quat, humerus_pos_quat)
@@ -98,7 +93,7 @@ if __name__ == '__main__':
                     no_static_dir(t.subject.scapula_stl_smooth_file)
             if activity in (['CA', 'SA', 'FE', 'ERa90', 'ERaR', 'WCA', 'WSA', 'WFE']):
                 log.info('Outputting torso, scapula, humerus kinematics for trial %s', t.trial_name)
-                f = trial_exporter(t, subject_dir, params.threejs_torso_source)
+                f = trial_exporter(t, db.attrs['dt'], subject_dir, params.torso_def)
                 json_export[subject_name]['activities'][activity] = f.parts[-2] + '/' + f.parts[-1]
 
     with open(root_path / 'db_summary.json', 'w') as summary_file:

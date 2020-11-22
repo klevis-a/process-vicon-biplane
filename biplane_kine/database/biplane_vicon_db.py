@@ -5,12 +5,14 @@ import itertools
 import functools
 import numpy as np
 import pandas as pd
+import quaternion
 from lazy import lazy
-from typing import Union, Callable, Type
-from scipy.spatial.transform import Rotation
+from typing import Union, Callable, Type, Tuple
+from ..kinematics.cs import ht_r, change_cs, ht_inv
 from ..kinematics.joint_cs import torso_cs_isb, torso_cs_v3d
 from ..kinematics.segments import StaticTorsoSegment
 from .db_common import TrialDescription, ViconEndpts, SubjectDescription, ViconCSTransform, trial_descriptor_df, MARKERS
+from ..kinematics.trajectory import PoseTrajectory
 from ..misc.python_utils import NestedDescriptor
 
 BIPLANE_FILE_HEADERS = {'frame': np.int32, 'pos_x': np.float64, 'pos_y': np.float64, 'pos_z': np.float64,
@@ -186,29 +188,35 @@ class BiplaneViconTrial(ViconCsvTrial):
         """Scapula raw biplane data."""
         return pd.read_csv(self.scapula_biplane_file, header=0, dtype=BIPLANE_FILE_HEADERS, index_col='frame')
 
-    @staticmethod
-    def homogeneous_from_biplane(df):
-        quat_raw = df.iloc[:, 3:].to_numpy()
-        # make quaternion scalar last
-        quat_raw = np.concatenate((quat_raw[:, 1:], quat_raw[:, 0][..., np.newaxis]), 1)
-        pos = df.iloc[:, :3].to_numpy()
-        valid_idx = ~np.any(np.isnan(quat_raw), 1)
-        rot_mat_valid = Rotation.from_quat(quat_raw[valid_idx]).as_matrix()
-        ht_mat = np.full((quat_raw.shape[0], 4, 4), np.nan)
-        ht_mat[:, :3, 3] = pos
-        ht_mat[valid_idx, :3, :3] = rot_mat_valid
-        ht_mat[:, 3, :] = [0, 0, 0, 1]
-        return ht_mat
+    @lazy
+    def humerus_quat_fluoro(self) -> np.ndarray:
+        """Humerus orientation (as a quaternion) expressed in fluoro reference frame."""
+        return self.humerus_biplane_data.iloc[:, 3:].to_numpy()
 
     @lazy
-    def humerus_fluoro(self) -> np.ndarray:
-        """Humerus frame trajectory (N, 4, 4) in biplane fluoroscopy reference frame."""
-        return BiplaneViconTrial.homogeneous_from_biplane(self.humerus_biplane_data)
+    def humerus_pos_fluoro(self) -> np.ndarray:
+        """Humerus position expressed in fluoro reference frame."""
+        return self.humerus_biplane_data.iloc[:, :3].to_numpy()
 
     @lazy
-    def scapula_fluoro(self) -> np.ndarray:
-        """Scapula frame trajectory (N, 4, 4) in biplane fluoroscopy reference frame."""
-        return BiplaneViconTrial.homogeneous_from_biplane(self.scapula_biplane_data)
+    def humerus_frame_nums(self) -> np.ndarray:
+        """Frame numbers for which the humerus was tracked in biplane fluoroscopy."""
+        return self.humerus_biplane_data.index.to_numpy()
+
+    @lazy
+    def scapula_quat_fluoro(self) -> np.ndarray:
+        """Scapula orientation (as a quaternion) expressed in fluoro reference frame."""
+        return self.scapula_biplane_data.iloc[:, 3:].to_numpy()
+
+    @lazy
+    def scapula_pos_fluoro(self) -> np.ndarray:
+        """Scapula position expressed in fluoro reference frame."""
+        return self.scapula_biplane_data.iloc[:, :3].to_numpy()
+
+    @lazy
+    def scapula_frame_nums(self) -> np.ndarray:
+        """Frame numbers for which the scapula was tracked in biplane fluoroscopy."""
+        return self.scapula_biplane_data.index.to_numpy()
 
     @lazy
     def torso_vicon_data(self) -> pd.DataFrame:
@@ -221,14 +229,24 @@ class BiplaneViconTrial(ViconCsvTrial):
         return pd.read_csv(self.torso_vicon_file_v3d, header=0, dtype=TORSO_FILE_HEADERS)
 
     @lazy
-    def torso_vicon(self) -> np.ndarray:
-        """Torso frame trajectory (N, 4, 4) in Vicon reference frame."""
-        return BiplaneViconTrial.homogeneous_from_biplane(self.torso_vicon_data)
+    def torso_quat_vicon(self) -> np.ndarray:
+        """Torso orientation (as a quaternion) expressed in Vicon reference frame."""
+        return self.torso_vicon_data.iloc[:, 3:].to_numpy()
 
     @lazy
-    def torso_vicon_v3d(self) -> np.ndarray:
-        """V3D torso frame trajectory (N, 4, 4) in Vicon reference frame."""
-        return BiplaneViconTrial.homogeneous_from_biplane(self.torso_vicon_data_v3d)
+    def torso_pos_vicon(self) -> np.ndarray:
+        """Torso position expressed in Vicon reference frame."""
+        return self.torso_vicon_data.iloc[:, :3].to_numpy()
+
+    @lazy
+    def torso_v3d_quat_vicon(self) -> np.ndarray:
+        """V3D torso orientation (as a quaternion) expressed in Vicon reference frame."""
+        return self.torso_vicon_data_v3d.iloc[:, 3:].to_numpy()
+
+    @lazy
+    def torso_v3d_pos_vicon(self) -> np.ndarray:
+        """V3D torso position expressed in Vicon reference frame."""
+        return self.torso_vicon_data_v3d.iloc[:, :3].to_numpy()
 
 
 class ViconStatic:
@@ -325,3 +343,65 @@ class BiplaneViconSubjectV3D(BiplaneViconSubject):
         torso_cs_v3d_func = functools.update_wrapper(
             functools.partial(torso_cs_v3d, armpit_thickness=self.armpit_thickness), torso_cs_v3d)
         return StaticTorsoSegment(torso_cs_v3d_func, self.static)
+
+
+def trajectories_from_trial(trial: BiplaneViconTrial, dt: float, base_cs: str = 'vicon', torso_def: str = 'isb',
+                            frame_sync: bool = True) -> Tuple[PoseTrajectory, PoseTrajectory, PoseTrajectory]:
+
+    assert(np.array_equal(trial.humerus_frame_nums, trial.scapula_frame_nums))
+
+    def get_torso_pos_quat(t, thorax_def):
+        if thorax_def == 'isb':
+            return t.torso_pos_vicon, t.torso_quat_vicon
+        elif thorax_def == 'v3d':
+            return t.torso_v3d_pos_vicon, t.torso_v3d_quat_vicon
+        else:
+            raise ValueError('torso_def must be either isb or v3d.')
+
+    if base_cs == 'vicon':
+        # scapula
+        scap_rot_mat = quaternion.as_rotation_matrix(quaternion.from_float_array(trial.scapula_quat_fluoro))
+        scap_traj_fluoro = ht_r(scap_rot_mat, trial.scapula_pos_fluoro)
+        scap_traj_vicon = change_cs(ht_inv(trial.subject.f_t_v), scap_traj_fluoro)
+        scap_traj = PoseTrajectory.from_ht(scap_traj_vicon, dt, trial.scapula_frame_nums)
+
+        # humerus
+        hum_rot_mat = quaternion.as_rotation_matrix(quaternion.from_float_array(trial.humerus_quat_fluoro))
+        hum_traj_fluoro = ht_r(hum_rot_mat, trial.humerus_pos_fluoro)
+        hum_traj_vicon = change_cs(ht_inv(trial.subject.f_t_v), hum_traj_fluoro)
+        hum_traj = PoseTrajectory.from_ht(hum_traj_vicon, dt, trial.humerus_frame_nums)
+
+        # torso
+        torso_pos_vicon, torso_quat_vicon = get_torso_pos_quat(trial, torso_def)
+
+        if frame_sync:
+            torso_pos_vicon_sync = (torso_pos_vicon[trial.vicon_endpts[0]:
+                                                    trial.vicon_endpts[1]])[trial.humerus_frame_nums - 1]
+            torso_quat_vicon_sync = (torso_quat_vicon[trial.vicon_endpts[0]:
+                                                      trial.vicon_endpts[1]])[trial.humerus_frame_nums - 1]
+            torso_traj = PoseTrajectory.from_quat(torso_pos_vicon_sync, torso_quat_vicon_sync, dt,
+                                                  trial.humerus_frame_nums)
+        else:
+            torso_traj = PoseTrajectory.from_quat(torso_pos_vicon, torso_quat_vicon, dt,
+                                                  np.arange(torso_pos_vicon.shape[0]) + 1)
+    elif base_cs == 'fluoro':
+        scap_traj = PoseTrajectory.from_quat(trial.scapula_pos_fluoro, trial.scapula_quat_fluoro, dt,
+                                             trial.scapula_frame_nums)
+        hum_traj = PoseTrajectory.from_quat(trial.humerus_pos_fluoro, trial.humerus_quat_fluoro, dt,
+                                            trial.humerus_frame_nums)
+
+        torso_pos_vicon, torso_quat_vicon = get_torso_pos_quat(trial, torso_def)
+        torso_rot_mat = quaternion.as_rotation_matrix(quaternion.from_float_array(torso_quat_vicon))
+        torso_traj_vicon = ht_r(torso_rot_mat, torso_pos_vicon)
+        torso_traj_fluoro = change_cs(trial.subject.f_t_v, torso_traj_vicon)
+
+        if frame_sync:
+            torso_traj_fluoro_sync = (torso_traj_fluoro[trial.vicon_endpts[0]:
+                                                        trial.vicon_endpts[1]])[trial.humerus_frame_nums - 1]
+            torso_traj = PoseTrajectory.from_ht(torso_traj_fluoro_sync, dt, trial.humerus_frame_nums)
+        else:
+            torso_traj = PoseTrajectory.from_ht(torso_traj_fluoro, dt, np.arange(torso_traj_fluoro.shape[0]) + 1)
+    else:
+        raise ValueError('base_cs must be either vicon or fluoro.')
+
+    return torso_traj, scap_traj, hum_traj

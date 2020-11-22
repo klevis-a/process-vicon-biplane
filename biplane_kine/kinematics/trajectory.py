@@ -5,6 +5,7 @@ from biplane_kine.kinematics.cs import ht_r, ht_inv, change_cs
 from biplane_kine.kinematics.vec_ops import extended_dot
 from biplane_kine.kinematics.vel_acc import ang_vel
 import biplane_kine.kinematics.euler_angles as euler_angles
+from biplane_kine.smoothing.mean_smoother import smooth_pos_traj, smooth_quat_traj
 
 
 class EulerTrajectory:
@@ -19,24 +20,35 @@ class EulerTrajectory:
 
 
 class PoseTrajectory:
-    """A rigid-body pose trajectory."""
+    """A rigid-body pose trajectory.
+
+    Attributes
+    ----------
+    pos: np.ndarray (N, 3)
+        Position trajectory.
+    dt: float
+        Frame period - expressed in seconds.
+    frame_nums: np.ndarray (N, 1)
+         Frame numbers associated with trajectory.
+    """
 
     @classmethod
-    def from_quat(cls, pos, quat, dt=1):
+    def from_quat(cls, pos, quat, dt=1, frame_nums=None):
         """Create trajectory from scalar-first quaternion (N, 4) and position (N, 3) trajectory."""
-        return cls(pos=pos, quat=quat, dt=dt)
+        return cls(pos=pos, quat=quat, dt=dt, frame_nums=frame_nums)
 
     @classmethod
-    def from_matrix(cls, pos, rot_mat, dt=1):
+    def from_matrix(cls, pos, rot_mat, dt=1, frame_nums=None):
         """Create trajectory from rotation matrix (N, 3, 3) and position (N, 3) trajectory."""
-        return cls(pos=pos, rot_mat=rot_mat, dt=dt)
+        return cls(pos=pos, rot_mat=rot_mat, dt=dt, frame_nums=frame_nums)
 
     @classmethod
-    def from_ht(cls, ht, dt=1):
+    def from_ht(cls, ht, dt=1, frame_nums=None):
         """Create trajectory from homogeneous transformation matrix (N, 4, 4) trajectory."""
-        return cls(ht=ht, dt=dt)
+        return cls(ht=ht, dt=dt, frame_nums=frame_nums)
 
-    def __init__(self, ht=None, pos=None, quat=None, rot_mat=None, dt=1):
+    def __init__(self, ht=None, pos=None, quat=None, rot_mat=None, dt=1, frame_nums=None):
+        self.frame_nums = frame_nums
         self.dt = dt
 
         # establish position
@@ -65,7 +77,7 @@ class PoseTrajectory:
     def quat(self) -> np.ndarray:
         """Return trajectory orientation as a scalar-first quaternion (numpy.quaternion) trajectory."""
         # if self.quat has been set in constructor this will never get called
-        return quaternion.from_rotation_matrix(self.rot_matrix)
+        return quaternion.from_rotation_matrix(self.rot_matrix, nonorthogonal=False)
 
     @property
     def quat_float(self) -> np.ndarray:
@@ -87,11 +99,11 @@ class PoseTrajectory:
 
     def in_frame(self, ht) -> 'PoseTrajectory':
         """Return a new pose trajectory which is the current trajectory expressed in the frame defined in ht."""
-        return PoseTrajectory.from_ht(change_cs(ht_inv(ht), self.ht), self.dt)
+        return PoseTrajectory.from_ht(change_cs(ht_inv(ht), self.ht), self.dt, self.frame_nums)
 
     def in_trajectory(self, traj) -> 'PoseTrajectory':
         """Return a new pose trajectory which is the current trajectory expressed in the trajectory defined in ht."""
-        return PoseTrajectory.from_ht(change_cs(ht_inv(traj.ht), self.ht), self.dt)
+        return PoseTrajectory.from_ht(change_cs(ht_inv(traj.ht), self.ht), self.dt, self.frame_nums)
 
     @lazy
     def euler(self) -> EulerTrajectory:
@@ -108,3 +120,8 @@ class PoseTrajectory:
     def ang_vel(self) -> np.ndarray:
         """Return trajectory angular velocity."""
         return ang_vel(self.rot_matrix, self.dt)
+
+
+def smooth_trajectory(traj: PoseTrajectory, num_frames_avg: int) -> PoseTrajectory:
+    return PoseTrajectory.from_quat(smooth_pos_traj(traj.pos, num_frames_avg),
+                                    smooth_quat_traj(traj.quat_float, num_frames_avg), traj.dt, traj.frame_nums)
