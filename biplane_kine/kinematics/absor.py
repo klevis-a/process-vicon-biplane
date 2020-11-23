@@ -4,7 +4,7 @@ import quaternion
 
 
 def absor_matrix(markers_a: np.ndarray, markers_b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    """Return optimal rigid transformation between markers_a and markers_b.
+    """Return optimal rigid transformation between markers_a (3, N) and markers_b (3, N).
 
     Söderkvist, I. and P.-Å. Wedin (1993). "Determining the movements of the skeleton using well-configured markers."
     J Biomech 26(12): 1473-1477.
@@ -20,7 +20,7 @@ def absor_matrix(markers_a: np.ndarray, markers_b: np.ndarray) -> Tuple[np.ndarr
 
 
 def absor_quat(markers_a: np.ndarray, markers_b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    """Return optimal rigid transformation between markers_a and markers_b.
+    """Return optimal rigid transformation between markers_a (3, N) and markers_b (3, N).
 
     Horn, B. K. P. (1987). "Closed-form solution of absolute orientation using unit quaternions."
     Journal of the Optical Society of America A 4(4): 629-642.
