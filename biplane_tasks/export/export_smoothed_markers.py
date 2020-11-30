@@ -73,7 +73,7 @@ if __name__ == '__main__':
     from biplane_kine.database.biplane_vicon_db import ViconCsvSubject
     from biplane_kine.misc.json_utils import Params
     from biplane_tasks.parameters import read_smoothing_exceptions
-    from biplane_tasks.general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     from logging.config import fileConfig
 
     # initialize

@@ -12,7 +12,7 @@ if __name__ == '__main__':
     from pathlib import Path
     import psutil
     import time
-    from .arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     from biplane_kine.misc.file_utils import pretty_size
     from biplane_kine.database import create_db
     from biplane_kine.database.biplane_vicon_db import ViconCsvSubject

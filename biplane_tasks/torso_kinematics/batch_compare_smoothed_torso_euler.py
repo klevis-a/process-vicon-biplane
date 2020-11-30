@@ -63,7 +63,7 @@ if __name__ == '__main__':
     from pathlib import Path
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
-    from ..general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     from biplane_kine.graphing.common_graph_utils import init_graphing
     from biplane_kine.database import create_db, anthro_db
     from biplane_kine.database.biplane_vicon_db import BiplaneViconSubjectV3D

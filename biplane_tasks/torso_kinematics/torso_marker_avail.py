@@ -22,7 +22,7 @@ if __name__ == '__main__':
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.common_graph_utils import init_graphing
     from biplane_kine.graphing.kine_plotters import MarkerClusterAvailPlotter
-    from ..general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     import logging
     from logging.config import fileConfig
 

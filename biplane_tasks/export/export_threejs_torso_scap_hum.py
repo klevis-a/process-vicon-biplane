@@ -23,7 +23,7 @@ if __name__ == '__main__':
     from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject, trajectories_from_trial
     from biplane_kine.kinematics.trajectory import smooth_trajectory
     from biplane_kine.misc.json_utils import Params
-    from biplane_tasks.general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     import logging
     from logging.config import fileConfig
 

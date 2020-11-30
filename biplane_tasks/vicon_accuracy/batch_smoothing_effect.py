@@ -76,7 +76,7 @@ if __name__ == '__main__':
     from biplane_kine.smoothing.kf_filtering_helpers import InsufficientDataError, DoNotUseMarkerError
     from biplane_kine.misc.json_utils import Params
     from .smoothing_effect_marker import add_c3d_helper, marker_accuracy_diff
-    from ..general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     import logging
     from logging.config import fileConfig
 

@@ -60,7 +60,7 @@ if __name__ == '__main__':
     from biplane_kine.smoothing.kf_filtering_helpers import InsufficientDataError, DoNotUseMarkerError
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.graphing.common_graph_utils import init_graphing
-    from ..general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     import logging
     from logging.config import fileConfig
 

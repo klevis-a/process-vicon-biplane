@@ -66,7 +66,7 @@ if __name__ == '__main__':
     from biplane_kine.database.c3d_helper import C3DSubjectEndpts
     from biplane_kine.smoothing.kf_filtering_helpers import InsufficientDataError, DoNotUseMarkerError
     from .smooth_marker import marker_plotter
-    from ..general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     import logging
     from logging.config import fileConfig
 

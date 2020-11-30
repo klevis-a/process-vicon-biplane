@@ -19,7 +19,7 @@ if __name__ == '__main__':
     import pandas as pd
     import numpy as np
     import quaternion
-    from ..general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     from biplane_kine.database import create_db, anthro_db
     from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject
     from biplane_kine.kinematics.joint_cs import torso_cs_isb, torso_cs_v3d

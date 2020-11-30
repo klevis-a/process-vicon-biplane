@@ -28,7 +28,7 @@ if __name__ == '__main__':
     from biplane_kine.kinematics.absor import compute_trajectory, compute_trajectory_continuous
     from biplane_kine.graphing.common_graph_utils import init_graphing
     from biplane_kine.graphing.kine_plotters import TorsoTrajComparisonPlotter
-    from ..general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     from ..parameters import read_filling_directives, trial_filling_directives
     import logging
     from logging.config import fileConfig

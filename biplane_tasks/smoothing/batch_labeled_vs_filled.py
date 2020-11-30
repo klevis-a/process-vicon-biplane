@@ -46,7 +46,7 @@ if __name__ == '__main__':
     if __package__ is None:
         print('Use -m option to run this library module as a script.')
 
-    from ..general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     from biplane_kine.database import create_db
     from biplane_kine.database.biplane_vicon_db import ViconCsvSubject
     from biplane_kine.misc.json_utils import Params

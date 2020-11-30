@@ -23,7 +23,7 @@ if __name__ == '__main__':
     from biplane_kine.graphing.kine_plotters import MarkerClusterFillPlotter
     from biplane_kine.smoothing.filling import fill_gaps_rb
     from biplane_kine.smoothing.kf_filtering_helpers import piecewise_filter_with_exception
-    from ..general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     from ..parameters import read_filling_directives, trial_filling_directives
     import logging
     from logging.config import fileConfig

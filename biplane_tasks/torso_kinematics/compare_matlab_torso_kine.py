@@ -18,7 +18,7 @@ if __name__ == '__main__':
     import pandas as pd
     import matplotlib.pyplot as plt
     import quaternion
-    from ..general.arg_parser import mod_arg_parser
+    from biplane_kine.misc.arg_parser import mod_arg_parser
     from biplane_kine.graphing.common_graph_utils import init_graphing, make_interactive
     from biplane_kine.kinematics.vec_ops import extended_dot
     from biplane_kine.kinematics.cs import change_cs
