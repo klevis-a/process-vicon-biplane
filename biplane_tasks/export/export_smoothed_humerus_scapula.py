@@ -8,7 +8,6 @@ biplane_vicon_db_dir: Path to the directory containing Vicon skin marker data.
 output_dir: Path to where trials should be exported
 num_frames_avg: Number of frames to average when smoothing scapula/humerus trajectories.
 """
-from biplane_kine.smoothing.mean_smoother import smooth_quat_traj, smooth_pos_traj
 
 if __name__ == '__main__':
     if __package__ is None:
@@ -17,6 +16,7 @@ if __name__ == '__main__':
     from pathlib import Path
     import numpy as np
     from biplane_kine.database import create_db
+    from biplane_kine.smoothing.mean_smoother import smooth_quat_traj, smooth_pos_traj
     from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.misc.arg_parser import mod_arg_parser
