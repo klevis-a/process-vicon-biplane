@@ -156,6 +156,11 @@ class BiplaneViconTrial(ViconCsvTrial):
         self.vicon_csv_file_smoothed = self.trial_dir_path / (self.trial_name + '_vicon_smoothed.csv')
         self.humerus_biplane_file = self.trial_dir_path / (self.trial_name + '_humerus_biplane.csv')
         self.scapula_biplane_file = self.trial_dir_path / (self.trial_name + '_scapula_biplane.csv')
+        self.humerus_biplane_file_avg_smooth = self.trial_dir_path / (self.trial_name +
+                                                                      '_humerus_biplane_avgSmooth.csv')
+        self.scapula_biplane_file = self.trial_dir_path / (self.trial_name + '_scapula_biplane.csv')
+        self.scapula_biplane_file_avg_smooth = self.trial_dir_path / (self.trial_name +
+                                                                      '_scapula_biplane_avgSmooth.csv')
         self.torso_vicon_file = self.trial_dir_path / (self.trial_name + '_torso.csv')
         self.torso_vicon_file_v3d = self.trial_dir_path / (self.trial_name + '_torso_v3d.csv')
 
@@ -163,6 +168,8 @@ class BiplaneViconTrial(ViconCsvTrial):
         assert (self.vicon_csv_file_smoothed.is_file())
         assert (self.humerus_biplane_file.is_file())
         assert (self.scapula_biplane_file.is_file())
+        assert (self.humerus_biplane_file_avg_smooth.is_file())
+        assert (self.scapula_biplane_file_avg_smooth.is_file())
         assert (self.torso_vicon_file.is_file())
         assert (self.torso_vicon_file_v3d.is_file())
 
@@ -189,6 +196,18 @@ class BiplaneViconTrial(ViconCsvTrial):
         return pd.read_csv(self.scapula_biplane_file, header=0, dtype=BIPLANE_FILE_HEADERS, index_col='frame')
 
     @lazy
+    def humerus_biplane_data_avg_smooth(self) -> pd.DataFrame:
+        """Humerus (average) smoothed biplane data."""
+        return pd.read_csv(self.humerus_biplane_file_avg_smooth, header=0,
+                           dtype=BIPLANE_FILE_HEADERS, index_col='frame')
+
+    @lazy
+    def scapula_biplane_data_avg_smooth(self) -> pd.DataFrame:
+        """Scapula (average) smothed biplane data."""
+        return pd.read_csv(self.scapula_biplane_file_avg_smooth,
+                           header=0, dtype=BIPLANE_FILE_HEADERS, index_col='frame')
+
+    @lazy
     def humerus_quat_fluoro(self) -> np.ndarray:
         """Humerus orientation (as a quaternion) expressed in fluoro reference frame."""
         return self.humerus_biplane_data.iloc[:, 3:].to_numpy()
@@ -197,6 +216,16 @@ class BiplaneViconTrial(ViconCsvTrial):
     def humerus_pos_fluoro(self) -> np.ndarray:
         """Humerus position expressed in fluoro reference frame."""
         return self.humerus_biplane_data.iloc[:, :3].to_numpy()
+
+    @lazy
+    def humerus_quat_fluoro_avg_smooth(self) -> np.ndarray:
+        """Smoothed humerus orientation (as a quaternion) expressed in fluoro reference frame."""
+        return self.humerus_biplane_data_avg_smooth.iloc[:, 3:].to_numpy()
+
+    @lazy
+    def humerus_pos_fluoro_avg_smooth(self) -> np.ndarray:
+        """Smoothed humerus position expressed in fluoro reference frame."""
+        return self.humerus_biplane_data_avg_smooth.iloc[:, :3].to_numpy()
 
     @lazy
     def humerus_frame_nums(self) -> np.ndarray:
@@ -212,6 +241,16 @@ class BiplaneViconTrial(ViconCsvTrial):
     def scapula_pos_fluoro(self) -> np.ndarray:
         """Scapula position expressed in fluoro reference frame."""
         return self.scapula_biplane_data.iloc[:, :3].to_numpy()
+
+    @lazy
+    def scapula_quat_fluoro_avg_smooth(self) -> np.ndarray:
+        """Smoothed scapula orientation (as a quaternion) expressed in fluoro reference frame."""
+        return self.scapula_biplane_data_avg_smooth.iloc[:, 3:].to_numpy()
+
+    @lazy
+    def scapula_pos_fluoro_avg_smooth(self) -> np.ndarray:
+        """Smoothed scapula position expressed in fluoro reference frame."""
+        return self.scapula_biplane_data_avg_smooth.iloc[:, :3].to_numpy()
 
     @lazy
     def scapula_frame_nums(self) -> np.ndarray:
@@ -345,10 +384,15 @@ class BiplaneViconSubjectV3D(BiplaneViconSubject):
         return StaticTorsoSegment(torso_cs_v3d_func, self.static)
 
 
-def trajectories_from_trial(trial: BiplaneViconTrial, dt: float, base_cs: str = 'vicon', torso_def: str = 'isb',
-                            frame_sync: bool = True) -> Tuple[PoseTrajectory, PoseTrajectory, PoseTrajectory]:
-
+def trajectories_from_trial(trial: BiplaneViconTrial, dt: float, smoothed: bool = True, base_cs: str = 'vicon',
+                            torso_def: str = 'isb', frame_sync: bool = True) -> Tuple[PoseTrajectory, PoseTrajectory,
+                                                                                      PoseTrajectory]:
     assert(np.array_equal(trial.humerus_frame_nums, trial.scapula_frame_nums))
+
+    scap_quat_field = 'scapula_quat_fluoro_avg_smooth' if smoothed else 'scapula_quat_fluoro'
+    scap_pos_field = 'scapula_pos_fluoro_avg_smooth' if smoothed else 'scapula_pos_fluoro'
+    hum_quat_field = 'humerus_quat_fluoro_avg_smooth' if smoothed else 'humerus_quat_fluoro'
+    hum_pos_field = 'humerus_pos_fluoro_avg_smooth' if smoothed else 'humerus_pos_fluoro'
 
     def get_torso_pos_quat(t, thorax_def):
         if thorax_def == 'isb':
@@ -360,14 +404,14 @@ def trajectories_from_trial(trial: BiplaneViconTrial, dt: float, base_cs: str = 
 
     if base_cs == 'vicon':
         # scapula
-        scap_rot_mat = quaternion.as_rotation_matrix(quaternion.from_float_array(trial.scapula_quat_fluoro))
-        scap_traj_fluoro = ht_r(scap_rot_mat, trial.scapula_pos_fluoro)
+        scap_rot_mat = quaternion.as_rotation_matrix(quaternion.from_float_array(getattr(trial, scap_quat_field)))
+        scap_traj_fluoro = ht_r(scap_rot_mat, getattr(trial, scap_pos_field))
         scap_traj_vicon = change_cs(ht_inv(trial.subject.f_t_v), scap_traj_fluoro)
         scap_traj = PoseTrajectory.from_ht(scap_traj_vicon, dt, trial.scapula_frame_nums)
 
         # humerus
-        hum_rot_mat = quaternion.as_rotation_matrix(quaternion.from_float_array(trial.humerus_quat_fluoro))
-        hum_traj_fluoro = ht_r(hum_rot_mat, trial.humerus_pos_fluoro)
+        hum_rot_mat = quaternion.as_rotation_matrix(quaternion.from_float_array(getattr(trial, hum_quat_field)))
+        hum_traj_fluoro = ht_r(hum_rot_mat, getattr(trial, hum_pos_field))
         hum_traj_vicon = change_cs(ht_inv(trial.subject.f_t_v), hum_traj_fluoro)
         hum_traj = PoseTrajectory.from_ht(hum_traj_vicon, dt, trial.humerus_frame_nums)
 
@@ -385,9 +429,9 @@ def trajectories_from_trial(trial: BiplaneViconTrial, dt: float, base_cs: str = 
             torso_traj = PoseTrajectory.from_quat(torso_pos_vicon, torso_quat_vicon, dt,
                                                   np.arange(torso_pos_vicon.shape[0]) + 1)
     elif base_cs == 'fluoro':
-        scap_traj = PoseTrajectory.from_quat(trial.scapula_pos_fluoro, trial.scapula_quat_fluoro, dt,
+        scap_traj = PoseTrajectory.from_quat(getattr(trial, scap_pos_field), getattr(trial, scap_quat_field), dt,
                                              trial.scapula_frame_nums)
-        hum_traj = PoseTrajectory.from_quat(trial.humerus_pos_fluoro, trial.humerus_quat_fluoro, dt,
+        hum_traj = PoseTrajectory.from_quat(getattr(trial, hum_pos_field), getattr(trial, hum_quat_field), dt,
                                             trial.humerus_frame_nums)
 
         torso_pos_vicon, torso_quat_vicon = get_torso_pos_quat(trial, torso_def)
