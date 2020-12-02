@@ -91,7 +91,7 @@ def xzy_intrinsic(mat: np.ndarray) -> np.ndarray:
 
     # compute Euler angles
     theta_x[not_nan] = np.where(r01 < 1, np.where(r01 > -1, np.arctan2(r21, r11), -np.arctan2(-r20, r22)),
-                                np.atan2(-r20, r22))
+                                np.arctan2(-r20, r22))
     theta_z[not_nan] = np.where(r01 < 1, np.where(r01 > -1, np.arcsin(-r01), np.pi/2), -np.pi/2)
     theta_y[not_nan] = np.where(r01 < 1, np.where(r01 > -1, np.arctan2(r02, r00), 0), 0)
 
