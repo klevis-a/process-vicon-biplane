@@ -449,3 +449,26 @@ def trajectories_from_trial(trial: BiplaneViconTrial, dt: float, smoothed: bool 
         raise ValueError('base_cs must be either vicon or fluoro.')
 
     return torso_traj, scap_traj, hum_traj
+
+
+def pre_fetch(biplane_vicon_trial: BiplaneViconTrial) -> None:
+    """Retrieve all data for the trial from disk."""
+    # pre-fetch humerus
+    biplane_vicon_trial.humerus_quat_fluoro
+    biplane_vicon_trial.humerus_pos_fluoro
+    biplane_vicon_trial.humerus_quat_fluoro_avg_smooth
+    biplane_vicon_trial.humerus_pos_fluoro_avg_smooth
+    biplane_vicon_trial.humerus_frame_nums
+
+    # pre-fetch scapula
+    biplane_vicon_trial.scapula_quat_fluoro
+    biplane_vicon_trial.scapula_pos_fluoro
+    biplane_vicon_trial.scapula_quat_fluoro_avg_smooth
+    biplane_vicon_trial.scapula_pos_fluoro_avg_smooth
+    biplane_vicon_trial.scapula_frame_nums
+
+    # torso
+    biplane_vicon_trial.torso_quat_vicon
+    biplane_vicon_trial.torso_pos_vicon
+    biplane_vicon_trial.torso_v3d_quat_vicon
+    biplane_vicon_trial.torso_v3d_pos_vicon
