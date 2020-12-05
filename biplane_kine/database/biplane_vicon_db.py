@@ -19,12 +19,18 @@ BIPLANE_FILE_HEADERS = {'frame': np.int32, 'pos_x': np.float64, 'pos_y': np.floa
                         'quat_w': np.float64, 'quat_x': np.float64, 'quat_y': np.float64, 'quat_z': np.float64}
 TORSO_FILE_HEADERS = {'pos_x': np.float64, 'pos_y': np.float64, 'pos_z': np.float64,
                       'quat_w': np.float64, 'quat_x': np.float64, 'quat_y': np.float64, 'quat_z': np.float64}
+LANDMARKS_FILE_HEADERS = {'Landmark': 'string', 'X': np.float64, 'Y': np.float64, 'Z': np.float64}
 TORSO_TRACKING_MARKERS = ['STRN', 'C7', 'T5', 'T10', 'CLAV']
 
 
 def csv_get_item_method(csv_data: pd.DataFrame, marker_name: str) -> np.ndarray:
     """Return the marker data, (n, 3) numpy array view, associated with marker_name."""
     return csv_data.loc[:, marker_name:(marker_name + '.2')].to_numpy()
+
+
+def landmark_get_item_method(csv_data: pd.DataFrame, landmark_name: str) -> np.ndarray:
+    """Return the landmark data, (3,) numpy array view, associated with landmark_name."""
+    return csv_data.loc[landmark_name, 'X':'Z'].to_numpy()
 
 
 def csv_get_item_method_squeeze(csv_data: pd.DataFrame, marker_name: str) -> np.ndarray:
@@ -361,6 +367,28 @@ class BiplaneViconSubject(SubjectDescription, ViconCSTransform, ViconStatic):
     def torso(self) -> StaticTorsoSegment:
         """Torso kinematic trajectory, numpy.ndarray (N, 4, 4)."""
         return StaticTorsoSegment(torso_cs_isb, self.static)
+
+    @lazy
+    def humerus_landmarks_data(self) -> pd.DataFrame:
+        """Landmarks data for the humerus."""
+        return pd.read_csv(self.humerus_landmarks_file, header=0, dtype=LANDMARKS_FILE_HEADERS, index_col='Landmark')
+
+    @lazy
+    def scapula_landmarks_data(self) -> pd.DataFrame:
+        """Landmarks data for the scapula."""
+        return pd.read_csv(self.scapula_landmarks_file, header=0, dtype=LANDMARKS_FILE_HEADERS, index_col='Landmark')
+
+    @lazy
+    def humerus_landmarks(self) -> NestedDescriptor:
+        """Descriptor that allows landmark indexed ([landmark_name]) access to landmarks data. The indexed access
+        returns a (3,) numpy array view."""
+        return NestedDescriptor(self.humerus_landmarks_data, landmark_get_item_method)
+
+    @lazy
+    def scapula_landmarks(self) -> NestedDescriptor:
+        """Descriptor that allows landmark indexed ([landmark_name]) access to landmarks data. The indexed access
+        returns a (3,) numpy array view."""
+        return NestedDescriptor(self.scapula_landmarks_data, landmark_get_item_method)
 
 
 class BiplaneViconSubjectV3D(BiplaneViconSubject):
