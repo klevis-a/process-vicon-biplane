@@ -1,6 +1,7 @@
 import numpy as np
 import quaternion
 from lazy import lazy
+from scipy.integrate import cumtrapz
 from biplane_kine.kinematics.cs import ht_r, ht_inv, change_cs
 from biplane_kine.kinematics.vec_ops import extended_dot
 from biplane_kine.kinematics.vel_acc import ang_vel
@@ -50,6 +51,7 @@ class PoseTrajectory:
     def __init__(self, ht=None, pos=None, quat=None, rot_mat=None, dt=1, frame_nums=None):
         self.frame_nums = frame_nums
         self.dt = dt
+        self.long_axis = None
 
         # establish position
         assert((ht is not None) ^ (pos is not None))
@@ -120,6 +122,15 @@ class PoseTrajectory:
     def ang_vel(self) -> np.ndarray:
         """Return trajectory angular velocity."""
         return ang_vel(self.rot_matrix, self.dt)
+
+    @lazy
+    def true_axial_rot(self) -> np.ndarray:
+        """Return the true axial rotation of the trajectory."""
+        if self.long_axis is None:
+            raise ValueError('You must set the long_axis in order to compute true axial rotation.')
+        ang_vel_proj = extended_dot(self.ang_vel, np.squeeze(self.rot_matrix @
+                                                             self.long_axis[np.newaxis, ..., np.newaxis]))
+        return cumtrapz(ang_vel_proj, dx=self.dt, initial=0)
 
 
 def smooth_trajectory(traj: PoseTrajectory, num_frames_avg: int) -> PoseTrajectory:
