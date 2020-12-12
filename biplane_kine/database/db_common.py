@@ -7,7 +7,7 @@ import numpy as np
 from lazy import lazy
 import quaternion
 from typing import Sequence, Union, Callable, Tuple
-from ..kinematics.cs import ht_r
+from biokinepy.cs import ht_r
 
 ACTIVITY_TYPES = ['CA', 'SA', 'FE', 'ERa90', 'ERaR', 'IRaB', 'IRaM', 'Static', 'WCA', 'WSA', 'WFE']
 """Short code that appears in the trial name for the activities that subjects performed."""

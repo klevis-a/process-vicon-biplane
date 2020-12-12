@@ -20,10 +20,10 @@ if __name__ == '__main__':
     import quaternion
     from biplane_kine.misc.arg_parser import mod_arg_parser
     from biplane_kine.graphing.common_graph_utils import init_graphing, make_interactive
-    from biplane_kine.kinematics.vec_ops import extended_dot
-    from biplane_kine.kinematics.cs import change_cs
+    from biokinepy.vec_ops import extended_dot
+    from biokinepy.cs import change_cs
     from biplane_kine.kinematics.segments import StaticTorsoSegment
-    from biplane_kine.kinematics.absor import compute_trajectory
+    from biokinepy.absor import compute_trajectory
     from biplane_kine.database import create_db, anthro_db
     from biplane_kine.database.biplane_vicon_db import BiplaneViconSubjectV3D
     from biplane_kine.misc.json_utils import Params

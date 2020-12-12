@@ -6,7 +6,7 @@ from typing import Tuple, Union, Dict, Any, Sequence
 from scipy.signal import butter, sosfiltfilt
 from biplane_kine.smoothing.kalman_filtering import (LinearKF1DSimdKalman, FilterStep, StateMeans, CovarianceVec,
                                                      CorrVec, extract_corrs)
-from biplane_kine.misc.np_utils import find_runs
+from biokinepy.np_utils import find_runs
 import logging
 log = logging.getLogger(__name__)
 

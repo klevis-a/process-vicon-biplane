@@ -18,8 +18,8 @@ if __name__ == '__main__':
     from pathlib import Path
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
-    from biplane_kine.kinematics.euler_angles import st_isb, ht_isb
-    from biplane_kine.kinematics.trajectory import smooth_trajectory
+    from biokinepy.euler_angles import st_isb, ht_isb
+    from biokinepy.trajectory import smooth_trajectory
     from biplane_kine.database import create_db
     from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject, trajectories_from_trial
     from biplane_kine.graphing.kine_plotters import RawSmoothSegmentPlotter

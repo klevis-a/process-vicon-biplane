@@ -8,11 +8,11 @@ import pandas as pd
 import quaternion
 from lazy import lazy
 from typing import Union, Callable, Type, Tuple
-from ..kinematics.cs import ht_r, change_cs, ht_inv
+from biokinepy.cs import ht_r, change_cs, ht_inv
 from ..kinematics.joint_cs import torso_cs_isb, torso_cs_v3d
 from ..kinematics.segments import StaticTorsoSegment
 from .db_common import TrialDescription, ViconEndpts, SubjectDescription, ViconCSTransform, trial_descriptor_df, MARKERS
-from ..kinematics.trajectory import PoseTrajectory
+from biokinepy.trajectory import PoseTrajectory
 from ..misc.python_utils import NestedDescriptor
 
 BIPLANE_FILE_HEADERS = {'frame': np.int32, 'pos_x': np.float64, 'pos_y': np.float64, 'pos_z': np.float64,

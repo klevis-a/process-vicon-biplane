@@ -5,9 +5,9 @@ from typing import Dict, Any
 import numpy as np
 from lazy import lazy
 from biplane_kine.database.vicon_accuracy import ViconAccuracyMarkerData
-from biplane_kine.kinematics.cs import vec_transform, make_vec_hom
-from biplane_kine.kinematics.vec_ops import extended_dot
-from biplane_kine.misc.np_utils import nanrms, nanmae
+from biokinepy.cs import vec_transform, make_vec_hom
+from biokinepy.vec_ops import extended_dot
+from biokinepy.np_utils import nanrms, nanmae
 from biplane_kine.smoothing.kf_filtering_helpers import piecewise_filter_with_exception
 
 

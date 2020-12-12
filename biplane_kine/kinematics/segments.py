@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Callable, Sequence, Mapping
-from .cs import make_vec_hom, vec_transform, ht_inv
+from biokinepy.cs import make_vec_hom, vec_transform, ht_inv
 
 
 class StaticBodySegment:
