@@ -5,7 +5,7 @@ import numpy as np
 from typing import Union
 import matplotlib.axes
 import matplotlib.lines
-from pythonGraphingLibrary import plotUtils
+from biplane_kine.graphing import plot_utils
 
 
 def marker_diff_graph(ax: matplotlib.axes.Axes, marker_data: np.ndarray, y_label: str, x_label: Union[str, None],
@@ -15,10 +15,10 @@ def marker_diff_graph(ax: matplotlib.axes.Axes, marker_data: np.ndarray, y_label
     Additionally, visually format the axes and include a y_label. **kwargs passed to matplotlib plot().
     """
     lines = ax.plot(x_data, marker_data, **kwargs)
-    plotUtils.update_spines(ax)
-    plotUtils.update_xticks(ax, font_size=8)
-    plotUtils.update_yticks(ax, fontsize=8)
+    plot_utils.update_spines(ax)
+    plot_utils.update_xticks(ax, font_size=8)
+    plot_utils.update_yticks(ax, fontsize=8)
     if x_label:
-        plotUtils.update_xlabel(ax, x_label, font_size=10)
-    plotUtils.update_ylabel(ax, y_label, font_size=10)
+        plot_utils.update_xlabel(ax, x_label, font_size=10)
+    plot_utils.update_ylabel(ax, y_label, font_size=10)
     return lines

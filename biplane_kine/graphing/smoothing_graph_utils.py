@@ -10,7 +10,7 @@ import numpy as np
 from collections.abc import Iterable
 from typing import List, Sequence, Callable, Any
 from matplotlib import axes
-from pythonGraphingLibrary import plotUtils
+from biplane_kine.graphing import plot_utils
 
 
 def marker_graph_title(fig: matplotlib.figure.Figure, title: str) -> None:
@@ -31,16 +31,16 @@ def marker_graph_init(ax: np.ndarray, marker_data: np.ndarray, y_label: str, x_d
     for n in range(3):
         current_line, = ax[n].plot(x_data, marker_data[:, n], **kwargs)
         lines.append(current_line)
-        plotUtils.update_spines(ax[n])
-        plotUtils.update_xticks(ax[n], font_size=8)
-        plotUtils.update_yticks(ax[n], fontsize=8)
+        plot_utils.update_spines(ax[n])
+        plot_utils.update_xticks(ax[n], font_size=8)
+        plot_utils.update_yticks(ax[n], fontsize=8)
         ax[n].margins(x=0, y=0.05)
         ax[n].yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
 
         if n == 2:
-            plotUtils.update_xlabel(ax[n], 'Frame Number', font_size=10)
+            plot_utils.update_xlabel(ax[n], 'Frame Number', font_size=10)
         elif n == 1:
-            plotUtils.update_ylabel(ax[n], y_label, font_size=10)
+            plot_utils.update_ylabel(ax[n], y_label, font_size=10)
     return lines
 
 
@@ -82,14 +82,14 @@ def marker_diff_his_init(ax: np.ndarray, filtered_diff: np.ndarray, x_label: str
         _, _, patches_filtered = ax[n].hist(current_filtered_diff[~np.isnan(current_filtered_diff)], bins=20,
                                             histtype='step', color=color)
         polygons_filtered.append(patches_filtered[0])
-        plotUtils.update_spines(ax[n])
-        plotUtils.update_xticks(ax[n], font_size=8)
-        plotUtils.update_yticks(ax[n], fontsize=8)
+        plot_utils.update_spines(ax[n])
+        plot_utils.update_xticks(ax[n], font_size=8)
+        plot_utils.update_yticks(ax[n], fontsize=8)
 
         if n == 1:
-            plotUtils.update_xlabel(ax[n], x_label, font_size=10)
+            plot_utils.update_xlabel(ax[n], x_label, font_size=10)
         elif n == 0:
-            plotUtils.update_ylabel(ax[n], 'Instances', font_size=10)
+            plot_utils.update_ylabel(ax[n], 'Instances', font_size=10)
 
     return polygons_filtered
 
@@ -123,17 +123,17 @@ def cov_trend_graph_init(ax: np.ndarray, variance_data: Any, x_data: np.ndarray,
         for j in range(3):
             line, = ax[i, j].plot(x_data, process_func(variance_data[i][:, j]), **kwargs)
             dim_lines.append(line)
-            plotUtils.update_spines(ax[i, j])
-            plotUtils.update_xticks(ax[i, j], font_size=8)
-            plotUtils.update_yticks(ax[i, j], fontsize=8)
+            plot_utils.update_spines(ax[i, j])
+            plot_utils.update_xticks(ax[i, j], font_size=8)
+            plot_utils.update_yticks(ax[i, j], fontsize=8)
             ax[i, j].margins(x=0, y=0.05)
             ax[i, j].yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
 
             if i == 2 and j == 1:
-                plotUtils.update_xlabel(ax[i, j], 'Frame Number', font_size=10)
+                plot_utils.update_xlabel(ax[i, j], 'Frame Number', font_size=10)
 
             if j == 0:
-                plotUtils.update_ylabel(ax[i, j], y_labels[i], font_size=10)
+                plot_utils.update_ylabel(ax[i, j], y_labels[i], font_size=10)
         lines.append(dim_lines)
     return lines
 

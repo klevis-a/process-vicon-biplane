@@ -1,4 +1,14 @@
-The code base is broadly organized into two sections: `biplane_kine` and `biplane_tasks`. `Biplane_tasks` contains scripts for data analysis tasks, such as smoothing, determining the effects of smoothing, computing segment kinematics from skin markers, etc. `Biplane_kine` is a library that contains the algorithmic logic that underpins the tasks in `biplane_tasks`.
+#### Introduction
+
+This code base contains utilities for processing segment kinematics obtained via biplane fluoroscopy and skin marker trajectories obtained from motion capture. The code base is broadly organized into two sections: `biplane_kine` and `biplane_tasks`. `Biplane_tasks` contains scripts for data analysis tasks, such as smoothing, determining the effects of smoothing, computing segment kinematics from skin markers, etc. `Biplane_kine` is a library that contains the algorithmic logic that underpins the tasks in `biplane_tasks`.
+
+#### Installation
+
+```
+git clone https://github.com/klevis-a/process-vicon-biplane
+cd process-vicon-biplane
+conda env create -f environment.yml
+```
 
 #### Background
 

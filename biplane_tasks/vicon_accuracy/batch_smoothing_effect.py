@@ -21,7 +21,7 @@ import numpy as np
 import matplotlib.axes
 import matplotlib.lines
 from typing import List, Tuple, Dict
-from pythonGraphingLibrary import plotUtils, bp_utils
+from biplane_kine.graphing import plot_utils, bp_utils
 import matplotlib.pyplot as plt
 
 
@@ -46,9 +46,9 @@ def create_summary_boxplot(ax: matplotlib.axes.Axes, diff_data: np.ndarray, y_la
     bp_utils.update_bp_fliers(bp, num_metrics, color_map)
     bp_utils.bp_vertical_sep(ax, num_groups, num_metrics)
     bp_utils.update_bp_xticks_groups(ax, num_bars, num_groups, num_metrics, group_names, font_size=12)
-    plotUtils.update_yticks(ax, fontsize=10)
-    plotUtils.update_spines(ax)
-    plotUtils.update_ylabel(ax, y_label, font_size=12)
+    plot_utils.update_yticks(ax, fontsize=10)
+    plot_utils.update_spines(ax)
+    plot_utils.update_ylabel(ax, y_label, font_size=12)
 
     # add the number of observations
     props = dict(boxstyle='round', facecolor='none')

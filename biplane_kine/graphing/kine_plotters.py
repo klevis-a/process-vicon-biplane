@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.figure
 from typing import List, Sequence, Dict, Tuple, Union
-from pythonGraphingLibrary import plotUtils
+from biplane_kine.graphing import plot_utils
 from .common_graph_utils import make_interactive
 from .smoothing_graph_utils import marker_graph_init, marker_graph_add
 from .kine_graph_utils import kine_graph_init, kine_graph_add, plot_marker_cluster_avail
@@ -282,7 +282,7 @@ class TorsoTrajComparisonPlotter:
         smoothed_filled_lines = marker_graph_add(ax, filled, self.frame_nums, ls=':', lw=2, color='green')
         sfs_lines = marker_graph_add(ax, sfs, self.frame_nums, color='green')
         for idx, sub_ax in enumerate(ax):
-            plotUtils.update_ylabel(sub_ax, y_labels[idx], font_size=10)
+            plot_utils.update_ylabel(sub_ax, y_labels[idx], font_size=10)
             sub_ax.axvline(self.vicon_endpts[0])
             sub_ax.axvline(self.vicon_endpts[1])
             sub_ax.set_xlim(left=1)
@@ -405,7 +405,7 @@ class RawSmoothSegmentPlotter:
         axs = fig.subplots(3, 1, sharex=True)
         raw_lines = marker_graph_init(axs, raw, '', self.frame_nums, color='red')
         for idx, ax in enumerate(axs):
-            plotUtils.update_ylabel(ax, axes_lbl_entries[idx], font_size=10)
+            plot_utils.update_ylabel(ax, axes_lbl_entries[idx], font_size=10)
         smoothed_lines = marker_graph_add(axs, smoothed, self.frame_nums, color='green')
         plt.tight_layout()
         plt.subplots_adjust(top=0.94)

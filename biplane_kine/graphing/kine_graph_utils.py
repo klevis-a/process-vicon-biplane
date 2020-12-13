@@ -5,7 +5,7 @@ import matplotlib.axes
 import matplotlib.ticker as ticker
 import numpy as np
 from typing import List, Collection, Tuple
-from pythonGraphingLibrary import plotUtils
+from biplane_kine.graphing import plot_utils
 
 
 def kine_graph_init(ax: matplotlib.axes.Axes, marker_data: np.ndarray, y_label: str, x_data: np.ndarray,
@@ -22,13 +22,13 @@ def kine_graph_init(ax: matplotlib.axes.Axes, marker_data: np.ndarray, y_label: 
         current_line, = ax.plot(x_data, marker_data[:, dim], **plot_args[dim])
         lines.append(current_line)
 
-    plotUtils.update_spines(ax)
-    plotUtils.update_xticks(ax, font_size=8)
-    plotUtils.update_yticks(ax, fontsize=8)
+    plot_utils.update_spines(ax)
+    plot_utils.update_xticks(ax, font_size=8)
+    plot_utils.update_yticks(ax, fontsize=8)
     ax.margins(x=0, y=0.05)
     ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
-    plotUtils.update_xlabel(ax, 'Frame Number', font_size=10)
-    plotUtils.update_ylabel(ax, y_label, font_size=10)
+    plot_utils.update_xlabel(ax, 'Frame Number', font_size=10)
+    plot_utils.update_ylabel(ax, y_label, font_size=10)
 
     return lines
 
@@ -69,10 +69,10 @@ def plot_marker_cluster_avail(ax: matplotlib.axes.Axes, marker_data: np.ndarray,
 
     ax.set_yticks(marker_ints + 1)
     ax.set_yticklabels(marker_names)
-    plotUtils.update_spines(ax)
-    plotUtils.update_xticks(ax, font_size=8)
-    plotUtils.update_yticks(ax, fontsize=8)
-    plotUtils.update_xlabel(ax, 'Frame Number', font_size=10)
+    plot_utils.update_spines(ax)
+    plot_utils.update_xticks(ax, font_size=8)
+    plot_utils.update_yticks(ax, fontsize=8)
+    plot_utils.update_xlabel(ax, 'Frame Number', font_size=10)
 
     ax.axvline(vicon_endpts[0] + 1)
     ax.axvline(vicon_endpts[1])
