@@ -150,6 +150,18 @@ class BiplaneViconTrial(ViconCsvTrial):
     ----------
     vicon_csv_file_smoothed: pathlib.Path
         Path to the smoothed marker data for the Vicon CSV trial.
+    humerus_biplane_file: pathlib.Path
+        File path to the raw kinematic trajectory for the humerus as derived from biplane fluoroscopy
+    scapula_biplane_file: pathlib.Path
+        File path to the raw kinematic trajectory for the scapula as derived from biplane fluoroscopy
+    humerus_biplane_file_avg_smooth: pathlib.Path
+        File path to the smoothed kinematic trajectory for the humerus as derived from biplane fluoroscopy
+    scapula_biplane_file_avg_smooth: pathlib.Path
+        File path to the smoothed kinematic trajectory for the scapula as derived from biplane fluoroscopy
+    torso_vicon_file: pathlib.Path
+        File path to the kinematic trajectory for the torso (ISB definition) as derived from skin markers
+    torso_vicon_file_v3d: pathlib.Path
+        File path to the kinematic trajectory for the torso (V3D definition) as derived from skin markers
     subject: biplane_kine.database.vicon_accuracy.BiplaneViconSubject
         Pointer to the subject that contains this trial.
     """
@@ -161,7 +173,6 @@ class BiplaneViconTrial(ViconCsvTrial):
         # file paths
         self.vicon_csv_file_smoothed = self.trial_dir_path / (self.trial_name + '_vicon_smoothed.csv')
         self.humerus_biplane_file = self.trial_dir_path / (self.trial_name + '_humerus_biplane.csv')
-        self.scapula_biplane_file = self.trial_dir_path / (self.trial_name + '_scapula_biplane.csv')
         self.humerus_biplane_file_avg_smooth = self.trial_dir_path / (self.trial_name +
                                                                       '_humerus_biplane_avgSmooth.csv')
         self.scapula_biplane_file = self.trial_dir_path / (self.trial_name + '_scapula_biplane.csv')
@@ -332,6 +343,14 @@ class BiplaneViconSubject(SubjectDescription, ViconCSTransform, ViconStatic):
     ----------
     subject_dir_path: pathlib.Path
         Path to directory containing subject data.
+    humerus_landmarks_file: pathlib.Path
+        File path to the humerus anatomical landmarks (in CT coordinate system).
+    scapula_landmarks_file: pathlib.Path
+        File path to the scapula anatomical landmarks (in CT coordinate system).
+    humerus_stl_smooth_file: pathlib.Path
+        File path to the humerus STL.
+    scapula_stl_smooth_file: pathlib.Path
+        File path to the scapula STL.
     trials: list of biplane_kine.database.biplane_vicon_db.BiplaneViconTrial
         List of trials for the subject.
     """
@@ -365,7 +384,7 @@ class BiplaneViconSubject(SubjectDescription, ViconCSTransform, ViconStatic):
 
     @lazy
     def torso(self) -> StaticTorsoSegment:
-        """Torso kinematic trajectory, numpy.ndarray (N, 4, 4)."""
+        """Torso pose in the static trial."""
         return StaticTorsoSegment(torso_cs_isb, self.static)
 
     @lazy
@@ -415,6 +434,7 @@ class BiplaneViconSubjectV3D(BiplaneViconSubject):
 def trajectories_from_trial(trial: BiplaneViconTrial, dt: float, smoothed: bool = True, base_cs: str = 'vicon',
                             torso_def: str = 'isb', frame_sync: bool = True) -> Tuple[PoseTrajectory, PoseTrajectory,
                                                                                       PoseTrajectory]:
+    """Create torso, scapula, and humerus trajectories from a trial."""
     assert(np.array_equal(trial.humerus_frame_nums, trial.scapula_frame_nums))
 
     scap_quat_field = 'scapula_quat_fluoro_avg_smooth' if smoothed else 'scapula_quat_fluoro'
