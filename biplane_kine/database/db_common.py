@@ -58,9 +58,9 @@ class TrialDescription:
     Attributes
     ----------
     trial_name: str
-        The unique trial identifier, e.g. N002A_CA_t01.
+        The unique trial identifier, e.g. U35_001_CA_t01.
     subject_short
-        The shortened subject identifer contained in the `trial_name`, e.g. N002A.
+        The shortened subject identifer contained in the `trial_name`, e.g. U35_001.
     activity
         The activity code contained in the `trial_name`, e.g. CA.
     trial_number
@@ -76,9 +76,9 @@ class TrialDescription:
     @staticmethod
     def parse_trial_name(trial_name: str) -> Tuple[str, str, int]:
         trial_name_split = trial_name.split('_')
-        subject = trial_name_split[0]
-        activity = trial_name_split[1]
-        trial_number = int(trial_name_split[2][1:])
+        subject = '_'.join(trial_name_split[0:2])
+        activity = trial_name_split[2]
+        trial_number = int(trial_name_split[3][1:])
         return subject, activity, trial_number
 
 
