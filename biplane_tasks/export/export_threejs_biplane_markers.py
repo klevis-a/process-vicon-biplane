@@ -1,5 +1,5 @@
-"""Export torso, scapula, and humerus kinematics for three.js animations for every trial in the biplane/Vicon
-filesystem-based database.
+"""Export torso, scapula, and humerus kinematics from biplane fluoroscopy and Vicon marker trajectories for three.js
+animations for every trial in the biplane/Vicon filesystem-based database.
 
 The path to a config directory (containing parameters.json) must be passed in as an argument. Within parameters.json the
 following keys must be present:
@@ -11,38 +11,17 @@ torso_def: Whether to use the ISB or V3D definition for establishing the torso c
 """
 
 import numpy as np
-from biplane_kine.database.biplane_vicon_db import trajectories_from_trial
 
 
-def export_to_csv(file_name, torso_data, scapula_data, hum_data):
-    header_line_generic = ['pos_x', 'pos_y', 'pos_z', 'quat_x', 'quat_y', 'quat_z', 'quat_w']
-    header_line_torso = ['torso_' + col for col in header_line_generic]
-    header_line_scapula = ['scap_' + col for col in header_line_generic]
-    header_line_humerus = ['hum_' + col for col in header_line_generic]
-    header_line = ','.join([','.join(header_line_torso), ','.join(header_line_scapula),
-                            ','.join(header_line_humerus)])
-    np.savetxt(file_name, np.concatenate((torso_data, scapula_data, hum_data), axis=1), delimiter=',', fmt='%.11g',
-               comments='', header=header_line)
-
-
-def trial_exporter(trial, dt, subject_folder, torso_def):
-    def pos_quat_from_traj(traj):
-        quat_sf = traj.quat_float
-        quat_sl = np.concatenate((quat_sf[:, 1:], quat_sf[:, 0][..., np.newaxis]), 1)
-        return np.concatenate((traj.pos, quat_sl), axis=1)
-
-    torso, scap, hum = trajectories_from_trial(trial, dt, smoothed=True, torso_def=torso_def)
-    torso_pos_quat = pos_quat_from_traj(torso)
-    scapula_pos_quat = pos_quat_from_traj(scap)
-    humerus_pos_quat = pos_quat_from_traj(hum)
-
-    trial_file = subject_folder / (trial.trial_name + '.csv')
-    export_to_csv(trial_file, torso_pos_quat, scapula_pos_quat, humerus_pos_quat)
-    return trial_file
-
-
-def no_static_dir(file):
-    return file.parts[-3] + '/' + file.parts[-1]
+def marker_exporter(trial, subject_folder):
+    col_names = trial.vicon_csv_data_smoothed.columns.values.tolist()
+    col_names_export = [col_name.replace('.1', '_Y').replace('.2', '_Z')
+                        if '.' in col_name else (col_name + '_X') for col_name in col_names]
+    file_path = subject_folder / (trial.trial_name + '_markers.csv')
+    marker_data = trial.vicon_csv_data_smoothed.to_numpy()[trial.vicon_endpts[0]:
+                                                           trial.vicon_endpts[1]][trial.humerus_frame_nums - 1]
+    np.savetxt(file_path, marker_data, delimiter=',', fmt='%.11g', comments='', header=','.join(col_names_export))
+    return file_path
 
 
 if __name__ == '__main__':
@@ -56,11 +35,13 @@ if __name__ == '__main__':
     from biplane_kine.database.biplane_vicon_db import BiplaneViconSubject
     from biplane_kine.misc.json_utils import Params
     from biplane_kine.misc.arg_parser import mod_arg_parser
+    from biplane_tasks.export.export_threejs_torso_scap_hum import no_static_dir, trial_exporter
     import logging
     from logging.config import fileConfig
 
     # initialize
-    config_dir = Path(mod_arg_parser('Export torso, scapula, and humerus kinematics for three.js',
+    config_dir = Path(mod_arg_parser('Export torso, scapula, and humerus kinematics and Vicon marker trajectories '
+                                     'for three.js',
                                      __package__, __file__))
     params = Params.get_params(config_dir / 'parameters.json')
 
@@ -81,6 +62,7 @@ if __name__ == '__main__':
         json_export[subject_name] = {}
         json_export[subject_name]['config'] = {}
         json_export[subject_name]['activities'] = {}
+        json_export[subject_name]['markers'] = {}
         for idx, (t, activity) in enumerate(zip(subject_df['Trial'], subject_df['Activity'])):
             if idx == 0:
                 shutil.copy(t.subject.humerus_landmarks_file, subject_dir)
@@ -99,6 +81,10 @@ if __name__ == '__main__':
                 log.info('Outputting torso, scapula, humerus kinematics for trial %s', t.trial_name)
                 f = trial_exporter(t, db.attrs['dt'], subject_dir, params.torso_def)
                 json_export[subject_name]['activities'][activity] = f.parts[-2] + '/' + f.parts[-1]
+
+                log.info('Outputting marker trajectories for trial %s', t.trial_name)
+                markers_file = marker_exporter(t, subject_dir)
+                json_export[subject_name]['markers'][activity] = markers_file.parts[-2] + '/' + markers_file.parts[-1]
 
     with open(root_path / 'db_summary.json', 'w') as summary_file:
         json.dump(json_export, summary_file, indent=4)
