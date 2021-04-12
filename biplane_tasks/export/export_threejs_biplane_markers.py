@@ -62,7 +62,6 @@ if __name__ == '__main__':
         json_export[subject_name] = {}
         json_export[subject_name]['config'] = {}
         json_export[subject_name]['activities'] = {}
-        json_export[subject_name]['markers'] = {}
         for idx, (t, activity) in enumerate(zip(subject_df['Trial'], subject_df['Activity'])):
             if idx == 0:
                 shutil.copy(t.subject.humerus_landmarks_file, subject_dir)
@@ -78,13 +77,15 @@ if __name__ == '__main__':
                 json_export[subject_name]['config']['scapula_stl_smooth_file'] = \
                     no_static_dir(t.subject.scapula_stl_smooth_file)
             if activity in (['CA', 'SA', 'FE', 'ERa90', 'ERaR', 'WCA', 'WSA', 'WFE']):
+                json_export[subject_name]['activities'][activity] = {}
                 log.info('Outputting torso, scapula, humerus kinematics for trial %s', t.trial_name)
                 f = trial_exporter(t, db.attrs['dt'], subject_dir, params.torso_def)
-                json_export[subject_name]['activities'][activity] = f.parts[-2] + '/' + f.parts[-1]
+                json_export[subject_name]['activities'][activity]['biplane'] = f.parts[-2] + '/' + f.parts[-1]
 
                 log.info('Outputting marker trajectories for trial %s', t.trial_name)
                 markers_file = marker_exporter(t, subject_dir)
-                json_export[subject_name]['markers'][activity] = markers_file.parts[-2] + '/' + markers_file.parts[-1]
+                json_export[subject_name]['activities'][activity]['markers'] = (markers_file.parts[-2] + '/' +
+                                                                                markers_file.parts[-1])
 
     with open(root_path / 'db_summary.json', 'w') as summary_file:
         json.dump(json_export, summary_file, indent=4)
