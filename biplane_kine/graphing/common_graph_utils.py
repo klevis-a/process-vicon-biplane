@@ -9,7 +9,7 @@ def init_graphing() -> None:
     """Specify the default font and backend for Matplotlib."""
     rcParams['font.family'] = 'sans-serif'
     rcParams['font.sans-serif'] = ['Arial']
-    matplotlib.use('Qt5Agg')
+    matplotlib.use('TkAgg')
 
 
 def make_interactive(multiple: bool = True) -> None:
