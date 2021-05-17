@@ -3,4 +3,7 @@
 
 **/__pycache__
 
-config/
+
+config/logging.ini
+
+config/parameters.json

@@ -1,0 +1,17 @@
+{
+  "biplane_vicon_db_dir": "C:\\Users\\user\\Desktop\\STA_DB2",
+  "accuracy_db_dir": "C:\\Users\\user\\Desktop\\Vicon_Accuracy_Export",
+  "trial_name": "N004_CA_t01",
+  "marker_name": "RACRM",
+  "output_dir": "C:\\Users\\user\\Desktop\\temp",
+  "print_to_file": "False",
+  "smoothing_exceptions": "C:\\Users\\user\\Desktop\\Repositories\\proccess-vicon-biplane\\config\\smoothing_exceptions.json",
+  "filling_directives": "C:\\Users\\user\\Desktop\\Repositories\\proccess-vicon-biplane\\config\\filling_directives.json",
+  "logger_name": "biplane_tasks",
+  "labeled_c3d_dir": "C:\\Users\\user\\Desktop\\Normal_Patients\\Vicon\\Vicon_Labeled\\Vicon_DB\\Ortho\\RTSA STUDY",
+  "filled_c3d_dir": "C:\\Users\\user\\Desktop\\Normal_Patients\\Vicon\\Vicon_Processed\\VICON_DB\\Ortho\\RTSA STUDY",
+  "use_filled_portion": "True",
+  "matlab_threejs_dir": "C:\\Users\\user\\Desktop\\Matlab_Analysis\\ThreeJS_ScapHum_Torso",
+  "torso_def": "v3d",
+  "num_frames_avg": 9
+}
