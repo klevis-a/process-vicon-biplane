@@ -59,6 +59,19 @@ if __name__ == '__main__':
     import logging
     from logging.config import fileConfig
 
+    friendly_names = {'SA': 'Scapular Plane Abduction',
+                      'CA': 'Coronal Plane Abduction',
+                      'FE': 'Forward Elevation',
+                      'ERa90': 'External Rotation at 90&deg; of Abduction',
+                      'ERaR': 'External Rotation at Rest',
+                      'WCA': 'Weighted Coronal Plane Abduction',
+                      'WSA': 'Weighted Scapular Plane Abduction',
+                      'WFE': 'Weighted Forward Elevation'}
+
+    friendly_names_keys = list(friendly_names.keys())
+
+    sorterIndex = dict(zip(friendly_names_keys, range(len(friendly_names_keys))))
+
     # initialize
     config_dir = Path(mod_arg_parser('Export torso, scapula, and humerus kinematics for three.js',
                                      __package__, __file__))
@@ -81,6 +94,11 @@ if __name__ == '__main__':
         json_export[subject_name] = {}
         json_export[subject_name]['config'] = {}
         json_export[subject_name]['activities'] = {}
+
+        # sort by the friendly_names order above
+        subject_df = subject_df.copy()
+        subject_df['activity_rank'] = subject_df['Activity'].map(sorterIndex)
+        subject_df.sort_values('activity_rank', ascending=True, inplace=True)
         for idx, (t, activity) in enumerate(zip(subject_df['Trial'], subject_df['Activity'])):
             if idx == 0:
                 shutil.copy(t.subject.humerus_landmarks_file, subject_dir)
@@ -91,14 +109,17 @@ if __name__ == '__main__':
                     no_static_dir(t.subject.humerus_landmarks_file)
                 json_export[subject_name]['config']['scapula_landmarks_file'] = \
                     no_static_dir(t.subject.scapula_landmarks_file)
-                json_export[subject_name]['config']['humerus_stl_smooth_file'] = \
+                json_export[subject_name]['config']['humerus_stl_file'] = \
                     no_static_dir(t.subject.humerus_stl_smooth_file)
-                json_export[subject_name]['config']['scapula_stl_smooth_file'] = \
+                json_export[subject_name]['config']['scapula_stl_file'] = \
                     no_static_dir(t.subject.scapula_stl_smooth_file)
             if activity in (['CA', 'SA', 'FE', 'ERa90', 'ERaR', 'WCA', 'WSA', 'WFE']):
                 log.info('Outputting torso, scapula, humerus kinematics for trial %s', t.trial_name)
                 f = trial_exporter(t, db.attrs['dt'], subject_dir, params.torso_def)
-                json_export[subject_name]['activities'][activity] = f.parts[-2] + '/' + f.parts[-1]
+                json_export[subject_name]['activities'][friendly_names[activity]] = {}
+                json_export[subject_name]['activities'][friendly_names[activity]]['trajectory'] = (f.parts[-2] + '/' +
+                                                                                                   f.parts[-1])
+                json_export[subject_name]['activities'][friendly_names[activity]]['freq'] = round(1/db.attrs['dt'], 2)
 
     with open(root_path / 'db_summary.json', 'w') as summary_file:
         json.dump(json_export, summary_file, indent=4)
